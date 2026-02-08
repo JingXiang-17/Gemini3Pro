@@ -1,174 +1,187 @@
+import os
+import json
+from typing import Optional, List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import google.generativeai as genai
-import os
-from typing import Optional
+from dotenv import load_dotenv
+import vertexai
+from vertexai.generative_models import (
+    GenerativeModel,
+    Tool,
+    GenerationConfig,
+    HarmCategory,
+    HarmBlockThreshold,
+    grounding
+)
+from google.oauth2 import service_account
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI(title="Fake News Detector API")
 
 # Configure CORS for Flutter frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your Flutter app's origin
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Configure Gemini AI
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+# --- Service Account Configuration ---
+CREDENTIALS_PATH = r"C:\Users\User\Documents\Gemini3Pro\backend\service-account.json"
+PROJECT_ID = "veriscan-kitahack"
+LOCATION = "us-central1"
+
+try:
+    if os.path.exists(CREDENTIALS_PATH):
+        credentials = service_account.Credentials.from_service_account_file(CREDENTIALS_PATH)
+        vertexai.init(project=PROJECT_ID, location=LOCATION, credentials=credentials)
+        VERTEX_AI_READY = True
+        print(f"Vertex AI initialized from: {CREDENTIALS_PATH}")
+    else:
+        print(f"CRITICAL: Credentials not found at {CREDENTIALS_PATH}")
+        VERTEX_AI_READY = False
+except Exception as e:
+    print(f"Error initializing Vertex AI: {e}")
+    VERTEX_AI_READY = False
 
 
 class NewsRequest(BaseModel):
-    news_text: str
+    news_text: str  # Aligned with Swagger and Prompt
 
 
 class NewsResponse(BaseModel):
     is_valid: bool
     confidence_score: float
     analysis: str
-    key_findings: list[str]
+    key_findings: List[str]
 
 
 @app.get("/")
 async def root():
     return {
-        "message": "Fake News Detector API",
-        "status": "running",
-        "endpoints": {
-            "/analyze": "POST - Analyze news article",
-            "/health": "GET - Health check"
-        }
+        "message": "Fake News Detector API (Hackathon Optimized)",
+        "status": "running"
     }
 
 
 @app.get("/health")
 async def health_check():
-    api_configured = GEMINI_API_KEY is not None
     return {
         "status": "healthy",
-        "gemini_api_configured": api_configured
+        "vertex_ai_configured": VERTEX_AI_READY,
+        "model": "gemini-2.5-flash-lite"
     }
 
 
 @app.post("/analyze", response_model=NewsResponse)
 async def analyze_news(request: NewsRequest):
     """
-    Analyze news article for validity using Gemini AI.
-    
-    The model is configured with low temperature for strict fact-checking
-    while being lenient on grammar/spelling issues.
+    Analyze news article using Gemini 2.5 Flash-Lite.
+    Handles multi-part responses and enforces strict JSON output.
     """
-    if not GEMINI_API_KEY:
-        raise HTTPException(
-            status_code=500,
-            detail="GEMINI_API_KEY not configured. Please set the environment variable."
-        )
+    if not VERTEX_AI_READY:
+        raise HTTPException(status_code=500, detail="Vertex AI not configured.")
     
     try:
-        # Configure model with strict settings for factual accuracy
-        # Low temperature (0.1) ensures the model is less creative and more factual
-        # This makes it strict about numbers, names, and crucial information
-        model = genai.GenerativeModel(
-            'gemini-1.5-pro',
-            generation_config={
-                'temperature': 0.1,  # Low temperature for strict, factual responses
-                'top_p': 0.8,
-                'top_k': 40,
-                'max_output_tokens': 2048,
-            }
-        )
+        # Grounding Tool
+        search_tool = Tool.from_dict({"google_search": {}})
+        model = GenerativeModel("gemini-2.5-flash-lite", tools=[search_tool])
         
-        # Craft a prompt that emphasizes factual accuracy over grammar
-        prompt = f"""You are a strict fact-checker analyzing news articles. Your task is to determine if the following news article is likely REAL or FAKE.
+        # Strict System Prompt
+        prompt = f"""You are a strict fact-checker. Analyze the provided news_text and output ONLY a valid JSON object. 
+Do not include a conversational preamble, thought process, or markdown blocks. 
+Focus only on the provided news_text.
 
-ANALYSIS CRITERIA:
-1. STRICT on factual accuracy: Check numbers, statistics, names, dates, locations, and verifiable facts
-2. LENIENT on grammar/spelling: Minor grammatical errors or typos should NOT affect validity if the meaning is clear
-3. Look for logical inconsistencies, impossible claims, or misleading information
-4. Consider the credibility of claims made
-
-NEWS ARTICLE TO ANALYZE:
+NEWS ARTICLE:
 {request.news_text}
 
-Provide your analysis in the following format:
-1. VERDICT: [REAL/FAKE/UNCERTAIN]
-2. CONFIDENCE: [0-100]%
-3. ANALYSIS: [Detailed explanation]
-4. KEY FINDINGS: [List 3-5 key observations that support your verdict]
+Output format:
+{{
+  "verdict": "REAL" | "FAKE" | "UNCERTAIN",
+  "confidence": number,
+  "analysis": "string",
+  "key_findings": ["string", "string", "string"]
+}}
+"""
 
-Be thorough but concise."""
-
-        response = model.generate_content(prompt)
-        analysis_text = response.text
-        
-        # Parse the response
-        verdict = "UNCERTAIN"
-        confidence = 50.0
-        key_findings = []
-        
-        lines = analysis_text.split('\n')
-        analysis_section = []
-        
-        for line in lines:
-            line_lower = line.lower().strip()
-            
-            # Extract verdict
-            if 'verdict:' in line_lower:
-                if 'real' in line_lower and 'fake' not in line_lower:
-                    verdict = "REAL"
-                elif 'fake' in line_lower:
-                    verdict = "FAKE"
-                else:
-                    verdict = "UNCERTAIN"
-            
-            # Extract confidence
-            elif 'confidence:' in line_lower:
-                # Try to extract percentage
-                import re
-                match = re.search(r'(\d+(?:\.\d+)?)', line)
-                if match:
-                    confidence = float(match.group(1))
-            
-            # Extract key findings
-            elif line.strip().startswith(('-', '•', '*')) and len(line.strip()) > 5:
-                finding = line.strip().lstrip('-•* ').strip()
-                if finding and finding not in key_findings:
-                    key_findings.append(finding)
-            
-            # Collect analysis text
-            elif line.strip() and not any(keyword in line_lower for keyword in ['verdict:', 'confidence:', 'key findings:', 'analysis:']):
-                if line.strip() and not line.strip().startswith(('1.', '2.', '3.', '4.')):
-                    analysis_section.append(line.strip())
-        
-        # If no key findings were extracted, try to get them from the response
-        if not key_findings:
-            key_findings = [
-                "Analysis completed - see detailed analysis for insights"
-            ]
-        
-        # Limit to top 5 findings
-        key_findings = key_findings[:5]
-        
-        analysis = ' '.join(analysis_section) if analysis_section else analysis_text
-        
-        is_valid = verdict == "REAL"
-        
-        return NewsResponse(
-            is_valid=is_valid,
-            confidence_score=confidence,
-            analysis=analysis,
-            key_findings=key_findings
+        generation_config = GenerationConfig(
+            temperature=0.0, 
+            max_output_tokens=2048,
         )
+        safety_settings = {
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        }
+
+        response = model.generate_content(
+            prompt,
+            generation_config=generation_config,
+            safety_settings=safety_settings
+        )
+        
+        # --- Multi-Part Part Extraction ---
+        full_text = ""
+        try:
+            if response.candidates:
+                candidate = response.candidates[0]
+                if candidate.content and candidate.content.parts:
+                    for part in candidate.content.parts:
+                        if hasattr(part, 'text') and part.text:
+                            full_text += part.text
+        except Exception as e:
+            # Silent fallback
+            try:
+                full_text = response.text
+            except:
+                full_text = ""
+
+        # --- JSON Cleaning ---
+        clean_text = full_text.strip()
+        if clean_text.startswith("```json"):
+            clean_text = clean_text.split("```json")[1].split("```")[0].strip()
+        elif clean_text.startswith("```"):
+            clean_text = clean_text.split("```")[1].split("```")[0].strip()
+        
+        # Fallback: find first { and last }
+        if "{" in clean_text and "}" in clean_text:
+            start = clean_text.find("{")
+            r_end = clean_text.rfind("}") + 1
+            clean_text = clean_text[start:r_end]
+
+        if not clean_text:
+            return NewsResponse(
+                is_valid=False,
+                confidence_score=0.0,
+                analysis="Gemini returned an empty response. This might be due to safety filters or a temporary glitch.",
+                key_findings=["Empty response"]
+            )
+
+        try:
+            result = json.loads(clean_text)
+            
+            return NewsResponse(
+                is_valid=result.get("verdict") == "REAL",
+                confidence_score=float(result.get("confidence", 50.0)),
+                analysis=result.get("analysis", "No analysis provided."),
+                key_findings=result.get("key_findings", [])
+            )
+        except Exception as parse_err:
+            print(f"Parse error: {parse_err}. Raw: {full_text}")
+            return NewsResponse(
+                is_valid=False,
+                confidence_score=0.0,
+                analysis=f"Failed to parse model response. Raw: {full_text[:200]}...",
+                key_findings=["Parsing error"]
+            )
     
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error analyzing news: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
