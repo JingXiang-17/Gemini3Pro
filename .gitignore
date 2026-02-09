@@ -1,43 +1,36 @@
+# Credentials (CRITICAL)
+service-account.json
+**/*service-account.json
+.env
+**/*.env
+apikey.properties
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-env/
 venv/
-ENV/
-.env
-.venv
+.venv/
+env/
+.env/
 
 # Flutter/Dart
 .dart_tool/
+.packages
+.pub/
+build/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+android/.gradle
 .flutter-plugins
 .flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
-**/build/
-*.iml
 
 # IDEs
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
-*~
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Gradle
-.gradle
-gradle-app.setting
-!gradle-wrapper.jar
-!gradle-wrapper.properties
-.gradletasknamecache
-.project
-.classpath
-backend/service-account.json.json
-backend/service-account.json

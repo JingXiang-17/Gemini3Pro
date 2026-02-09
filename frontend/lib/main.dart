@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'screens/fact_check_screen.dart';
+import 'screens/dashboard_screen.dart';
 
 void main() {
   runApp(const VeriScanApp());
@@ -28,9 +28,9 @@ class VeriScanApp extends StatelessWidget {
         ),
         textTheme: GoogleFonts.outfitTextTheme(
           ThemeData.dark().textTheme.copyWith(
-            bodyLarge: const TextStyle(color: Color(0xFFE0E0E0)),
-            bodyMedium: const TextStyle(color: Color(0xFFB0B0B0)),
-          ),
+                bodyLarge: const TextStyle(color: Color(0xFFE0E0E0)),
+                bodyMedium: const TextStyle(color: Color(0xFFB0B0B0)),
+              ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
@@ -40,7 +40,7 @@ class VeriScanApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const FactCheckScreen(),
+      home: const DashboardScreen(),
     );
   }
 }

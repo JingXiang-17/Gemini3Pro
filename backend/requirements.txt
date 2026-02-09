@@ -1,6 +1,7 @@
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-google-cloud-aiplatform>=1.38.0
-google-auth>=2.23.0
-pydantic==2.5.3
-python-dotenv==1.0.0
+fastapi
+uvicorn
+python-dotenv
+google-cloud-aiplatform
+google-auth
+python-multipart
+pydantic

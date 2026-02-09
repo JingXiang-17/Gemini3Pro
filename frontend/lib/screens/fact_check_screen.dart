@@ -24,7 +24,7 @@ class _FactCheckScreenState extends State<FactCheckScreen> {
     });
 
     try {
-      final result = await _service.analyzeNews(_controller.text);
+      final result = await _service.analyzeNews(text: _controller.text);
       setState(() {
         _result = result;
       });
