@@ -19,7 +19,8 @@ from firebase_admin import initialize_app
 import firebase_admin
 
 # Import models (ensure models.py is in the same directory)
-from models import AnalysisResponse, GroundingCitation
+from models import AnalysisResponse, GroundingCitation, GroundingSupport
+from grounding_service import GroundingService
 
 # --- Initialization ---
 load_dotenv()
@@ -31,6 +32,9 @@ if not firebase_admin._apps:
     initialize_app()
 
 app = FastAPI(title="VeriScan Core Engine")
+
+# Initialize Grounding Service
+grounding_service = GroundingService()
 
 # Configure CORS
 # Critical: Allow Firebase Hosting or * for testing
@@ -156,12 +160,28 @@ Schema:
         grounding_citations = []
         if response.candidates and response.candidates[0].grounding_metadata.grounding_chunks:
             for chunk in response.candidates[0].grounding_metadata.grounding_chunks:
+                # Extract text context if available
+                snippet_text = "Grounding source"
+                if hasattr(chunk, 'retrieved_context'):
+                    # retrieved_context might be an object or string depending on SDK version
+                    ctx = getattr(chunk, 'retrieved_context')
+                    if ctx:
+                        snippet_text = str(ctx.text) if hasattr(ctx, 'text') else str(ctx)
+                
                 if chunk.web:
                     grounding_citations.append(GroundingCitation(
                         title=chunk.web.title or "Source",
                         url=chunk.web.uri,
-                        snippet="Grounding source"
+                        # Use title as text if we couldn't find a snippet, to allow title-based keywords matching
+                        snippet=snippet_text if snippet_text != "Grounding source" else (chunk.web.title or "")
                     ))
+                elif hasattr(chunk, 'retrieved_context'):
+                     # Handle non-web chunks (e.g. from enterprise search) if needed
+                     grounding_citations.append(GroundingCitation(
+                        title="Retrieved Context",
+                        url="",
+                        snippet=snippet_text
+                     ))
         
         # Check Recitation
         if response.candidates and response.candidates[0].finish_reason == FinishReason.RECITATION:
@@ -200,6 +220,53 @@ Schema:
             data.setdefault("grounding_citations", [])
             data.setdefault("source_metadata", None)
             data.setdefault("media_literacy", None)
+            
+            # --- Grounding Service Integration ---
+            # Prepare sources for the service (convert GroundingCitation to list of dicts)
+            # The service expects [{'uri':..., 'title':..., 'text':...}]
+            service_sources = []
+            
+            # Use the final list of citations in the data object (merged from metadata or JSON)
+            final_citations = data.get("grounding_citations", [])
+            
+            for gc in final_citations:
+                # gc might be a dict (from JSON) or model_dump (from metadata)
+                # Ensure we handle both
+                if isinstance(gc, dict):
+                     uri = gc.get("url") or gc.get("uri")
+                     title = gc.get("title")
+                     snippet = gc.get("snippet")
+                else:
+                     # Should not happen given previous logic ensures dicts in data, but safety first
+                     uri = getattr(gc, "url", "")
+                     title = getattr(gc, "title", "")
+                     snippet = getattr(gc, "snippet", "")
+
+                service_sources.append({
+                    "uri": uri,
+                    "title": title,
+                    "text": snippet or title # Use snippet or title as text for matching
+                })
+            
+            # Assuming 'analysis' field is the main text to segment
+            analysis_text = data.get("analysis", "")
+            
+            # Call the service
+            grounding_result = grounding_service.process(analysis_text, service_sources)
+            
+            # Extract supports
+            raw_supports = grounding_result.get("groundingSupports", [])
+            
+            # Convert to Pydantic models
+            from models import Segment, GroundingSupport # Ensure these are available or use data directly if dict
+            
+            structured_supports = []
+            for support in raw_supports:
+                # support is a dict matching the structure
+                structured_supports.append(support)
+            
+            # Add to data
+            data["grounding_supports"] = structured_supports
 
             return AnalysisResponse(**data)
 

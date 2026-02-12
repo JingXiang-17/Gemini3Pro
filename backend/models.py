@@ -15,6 +15,16 @@ class MediaLiteracy(BaseModel):
     logical_fallacies: List[str]
     tone_analysis: str
 
+class Segment(BaseModel):
+    startIndex: int
+    endIndex: int
+    text: str
+
+class GroundingSupport(BaseModel):
+    segment: Segment
+    groundingChunkIndices: List[int]
+    confidenceScores: List[float] = []
+
 class AnalysisResponse(BaseModel):
     verdict: Literal["REAL", "FAKE", "MISLEADING", "UNVERIFIED"]
     confidence_score: float
@@ -22,4 +32,5 @@ class AnalysisResponse(BaseModel):
     key_findings: List[str]
     source_metadata: Optional[SourceMetadata] = None
     grounding_citations: List[GroundingCitation] = []
+    grounding_supports: List[GroundingSupport] = []
     media_literacy: Optional[MediaLiteracy] = None
