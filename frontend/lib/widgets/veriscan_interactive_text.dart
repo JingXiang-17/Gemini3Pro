@@ -22,11 +22,34 @@ class VeriscanInteractiveText extends StatefulWidget {
 }
 
 class _VeriscanInteractiveTextState extends State<VeriscanInteractiveText> {
+  // ===========================================================================
+  //  UI TUNING VARIABLES - ADJUST THESE TO TWEAK HIGHLIGHT LOOK
+  // ===========================================================================
+
+  // 1. Line Spacing: Controls the vertical gap between lines of text.
+  //    Higher value = More gap between ribbons.
+  static const double kStrutHeight = 2.0;
+
+  // 2. Highlight Height: Scale factor for the text height when active.
+  //    Controls "Inner Thickness" / Height of the core box.
+  //    - 1.0 = Normal Text Height
+  //    - 0.85 = Tight/Shrunken
+  //    - Increase to 0.95 or 1.0 to "cover whole text".
+  static const double kActiveSpanHeight = 1.0;
+
+  // 3. Highlight Padding/Rounding: Thickness of the stroke around the box.
+  //    Adds "fatness" and controls corner radius.
+  //    - Radius = StrokeWidth / 2.
+  static const double kActiveStrokeWidth = 1.0;
+
+  // ===========================================================================
+
   final OverlayPortalController _overlayController = OverlayPortalController();
   final LayerLink _layerLink = LayerLink();
 
-  // Track currently active support to show correct data
+  // Track currently active and hovered supports
   GroundingSupport? _activeSupport;
+  GroundingSupport? _hoveredSupport;
 
   void _showPopup(GroundingSupport support) {
     setState(() {
@@ -50,12 +73,25 @@ class _VeriscanInteractiveTextState extends State<VeriscanInteractiveText> {
         GroundingParser.parse(widget.analysisText, widget.groundingSupports);
     final theme = Theme.of(context);
 
-    // Base style for the text
+    // Standard Font setup
+    const double kFontSize = 15.0;
+
+    // Enforce layout spacing
+    final strutStyle = StrutStyle(
+      fontSize: kFontSize,
+      height: kStrutHeight,
+      forceStrutHeight: true,
+      leading: 0.5,
+    );
+
+    // Base Style for plain text
     final baseStyle = theme.textTheme.bodyMedium?.copyWith(
-          height: 1.5,
-          fontSize: 15,
+          fontSize: kFontSize,
+          height: 1.0,
         ) ??
-        const TextStyle(fontSize: 15, height: 1.5);
+        const TextStyle(fontSize: kFontSize, height: 1.0);
+
+    const kGold = Color(0xFFD4AF37);
 
     return CompositedTransformTarget(
       link: _layerLink,
@@ -68,10 +104,9 @@ class _VeriscanInteractiveTextState extends State<VeriscanInteractiveText> {
             width: 300,
             child: CompositedTransformFollower(
               link: _layerLink,
-              targetAnchor: Alignment
-                  .bottomLeft, // Show below the text block (simplified)
+              targetAnchor: Alignment.bottomLeft,
               followerAnchor: Alignment.topLeft,
-              offset: const Offset(0, 10), // slight padding
+              offset: const Offset(0, 10),
               child: TapRegion(
                 onTapOutside: (_) => _hidePopup(),
                 child: CitationPopup(
@@ -83,34 +118,73 @@ class _VeriscanInteractiveTextState extends State<VeriscanInteractiveText> {
           );
         },
         child: RichText(
+          key: ValueKey(
+              '${widget.analysisText}_${_activeSupport?.hashCode ?? 0}_${_hoveredSupport?.hashCode ?? 0}'),
+          strutStyle: strutStyle,
           text: TextSpan(
             style: baseStyle,
-            children: chunks.map((chunk) {
+            children: chunks.expand((chunk) {
               if (chunk.type == ChunkType.plain) {
-                return TextSpan(text: chunk.text);
+                return [TextSpan(text: chunk.text)];
               } else {
                 final isSelected = _activeSupport == chunk.support;
+                final isHovered = _hoveredSupport == chunk.support;
 
-                return TextSpan(
-                  text: chunk.text,
-                  style: baseStyle.copyWith(
-                    backgroundColor: isSelected
-                        ? const Color(0xFFD4AF37).withValues(alpha: 0.3)
-                        : const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                    decoration: TextDecoration.underline,
-                    decorationStyle: TextDecorationStyle.dashed,
-                    decorationColor:
-                        const Color(0xFFD4AF37).withValues(alpha: 0.8),
-                    decorationThickness:
-                        2.0, // Thicker underline for visibility
+                final Paint? backgroundPaint = isSelected
+                    ? (Paint()
+                      ..color = kGold.withValues(alpha: 0.2)
+                      ..style = PaintingStyle.stroke
+                      ..strokeWidth = kActiveStrokeWidth // TWEAKABLE
+                      ..strokeJoin = StrokeJoin.round
+                      ..strokeCap = StrokeCap.round)
+                    : null;
+
+                // Active/Hover height
+                final double? spanHeight =
+                    isSelected ? kActiveSpanHeight : 1.0; // TWEAKABLE
+
+                // Hover: Thin Underline
+                final TextDecoration decoration = (isHovered && !isSelected)
+                    ? TextDecoration.underline
+                    : TextDecoration.none;
+
+                return [
+                  TextSpan(
+                    text: chunk.text,
+                    style: baseStyle.copyWith(
+                      height: spanHeight,
+                      background: backgroundPaint,
+                      decoration: decoration,
+                      decorationColor: kGold.withValues(alpha: 0.6),
+                      decorationThickness: 1.0,
+                    ),
+                    mouseCursor: SystemMouseCursors.click,
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () {
+                        if (chunk.support != null) {
+                          _showPopup(chunk.support!);
+                        }
+                      },
+                    onEnter: (_) =>
+                        setState(() => _hoveredSupport = chunk.support),
+                    onExit: (_) => setState(() => _hoveredSupport = null),
                   ),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap = () {
-                      if (chunk.support != null) {
-                        _showPopup(chunk.support!);
-                      }
-                    },
-                );
+                  // Superscript Gold Diamond
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.top,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 2.0),
+                      child: Transform.translate(
+                        offset: const Offset(0, 4),
+                        child: const Icon(
+                          Icons.diamond,
+                          size: 8,
+                          color: kGold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ];
               }
             }).toList(),
           ),
