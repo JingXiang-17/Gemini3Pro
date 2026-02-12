@@ -6,12 +6,14 @@ class EvidenceCard extends StatelessWidget {
   final String title;
   final String snippet;
   final String url;
+  final bool isActive;
 
   const EvidenceCard({
     super.key,
     required this.title,
     required this.snippet,
     required this.url,
+    this.isActive = false,
   });
 
   Future<void> _launchUrl() async {
@@ -26,9 +28,23 @@ class EvidenceCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: isActive
+            ? const Color(0xFFD4AF37).withValues(alpha: 0.05)
+            : Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(
+          color: isActive ? const Color(0xFFD4AF37) : Colors.white12,
+          width: isActive ? 1.5 : 1.0,
+        ),
+        boxShadow: isActive
+            ? [
+                BoxShadow(
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.1),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                )
+              ]
+            : [],
       ),
       child: ListTile(
         onTap: _launchUrl,
