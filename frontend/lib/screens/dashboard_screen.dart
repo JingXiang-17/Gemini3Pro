@@ -130,6 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
         },
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch, // Ensure full height
           children: [
             // 0. SHELL (Existing Slim Nav Rail - Preserved)
             Container(
@@ -151,10 +152,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // THE WORKSPACE (3 Columns)
             Expanded(
               child: Row(
+                crossAxisAlignment:
+                    CrossAxisAlignment.stretch, // Ensure full height
                 children: [
-                  // COLUMN 1: Source Material Sidebar (Flex 2)
+                  // COLUMN 1: Source Material Sidebar (Fixed Width, Animated)
                   Flexible(
-                    flex: _isSidebarExpanded ? 2 : 0,
+                    flex: 0,
                     child: SourceSidebarContainer(
                       isExpanded: _isSidebarExpanded,
                       onToggle: _toggleSidebar,
@@ -169,6 +172,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(
                     flex: 5,
                     child: Stack(
+                      fit: StackFit.expand, // Ensure Container fills the space
                       children: [
                         Container(
                           color: const Color(0xFF121212),

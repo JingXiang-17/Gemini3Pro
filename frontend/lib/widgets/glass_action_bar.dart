@@ -33,53 +33,66 @@ class GlassActionBar extends StatelessWidget {
       ),
       child: SafeArea(
         child: Row(
+          crossAxisAlignment:
+              CrossAxisAlignment.end, // Align button to bottom as bar grows
           children: [
             Expanded(
-              child: TextField(
-                controller: controller,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Enter claim or text to verify...',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.05),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: 200.0,
                 ),
-                onSubmitted: (_) => onAnalyze(),
+                child: TextField(
+                  controller: controller,
+                  maxLines: null,
+                  minLines: 1,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Enter claim or text to verify...',
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                          20), // Slightly less round for multi-line
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 16),
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 16),
-            ElevatedButton(
-              onPressed: isLoading ? null : onAnalyze,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD4AF37),
-                foregroundColor: Colors.black,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+            Padding(
+              padding: const EdgeInsets.only(
+                  bottom: 2), // Subtle alignment adjustment
+              child: ElevatedButton(
+                onPressed: isLoading ? null : onAnalyze,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4AF37),
+                  foregroundColor: Colors.black,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 0,
-              ),
-              child: isLoading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                          color: Colors.black, strokeWidth: 2),
-                    )
-                  : Text(
-                      'ANALYZE',
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
+                child: isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                            color: Colors.black, strokeWidth: 2),
+                      )
+                    : Text(
+                        'ANALYZE',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
                       ),
-                    ),
+              ),
             ),
           ],
         ),
