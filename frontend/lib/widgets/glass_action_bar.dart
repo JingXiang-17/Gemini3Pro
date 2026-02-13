@@ -116,12 +116,14 @@ class _GlassActionBarState extends State<GlassActionBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E).withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(32),
+        color: Colors.black, // Pure black
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(
-            color: const Color(0xFFD4AF37).withValues(alpha: 0.3), width: 1),
+          color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+          width: 0.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.5),
@@ -133,81 +135,91 @@ class _GlassActionBarState extends State<GlassActionBar> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (widget.attachments.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: SizedBox(
-                height: 40,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: widget.attachments.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final attachment = widget.attachments[index];
-                    final chipKey =
-                        widget.chipKeys[attachment.id] ?? GlobalKey();
-                    // Ensure the key is stored if not already
-                    if (!widget.chipKeys.containsKey(attachment.id)) {
-                      widget.chipKeys[attachment.id] = chipKey;
-                    }
-                    return _AttachmentChip(
-                      key: chipKey,
-                      attachment: attachment,
-                      onRemove: () => widget.onRemoveAttachment(attachment.id),
-                    );
-                  },
-                ),
+          if (widget.attachments.isNotEmpty) ...[
+            SizedBox(
+              height: 40,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                itemCount: widget.attachments.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final attachment = widget.attachments[index];
+                  final chipKey = widget.chipKeys[attachment.id] ?? GlobalKey();
+                  if (!widget.chipKeys.containsKey(attachment.id)) {
+                    widget.chipKeys[attachment.id] = chipKey;
+                  }
+                  return _AttachmentChip(
+                    key: chipKey,
+                    attachment: attachment,
+                    onRemove: () => widget.onRemoveAttachment(attachment.id),
+                  );
+                },
               ),
             ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Divider(
+                height: 1,
+                thickness: 0.5,
+                color: Colors.white10,
+              ),
+            ),
+          ],
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _PickerButton(onAdd: widget.onAddAttachment),
               const SizedBox(width: 8),
               Expanded(
                 child: TextField(
                   controller: widget.controller,
-                  maxLines: 4,
-                  minLines: 1,
-                  style: GoogleFonts.outfit(color: Colors.white, fontSize: 15),
+                  maxLines: 1, // Single line
+                  style: GoogleFonts.outfit(color: Colors.white, fontSize: 14),
                   decoration: const InputDecoration(
-                    hintText:
-                        "Enter claim or paste link with source(image,pdf) directly for analysis...",
-                    hintStyle: TextStyle(color: Colors.white38),
+                    hintText: "Enter claim or attach files",
+                    hintStyle: TextStyle(color: Colors.white38, fontSize: 14),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 12),
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: widget.isLoading ? null : widget.onAnalyze,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD4AF37),
-                  foregroundColor: Colors.black,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  elevation: 0,
-                ),
-                child: widget.isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.black, strokeWidth: 2),
-                      )
-                    : Text(
-                        'ANALYZE',
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: widget.isLoading ? null : widget.onAnalyze,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4AF37),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        spreadRadius: 1,
                       ),
+                    ],
+                  ),
+                  child: Center(
+                    child: widget.isLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              color: Colors.black,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.biotech, // Scan icon
+                            color: Colors.black,
+                            size: 20,
+                          ),
+                  ),
+                ),
               ),
+              const SizedBox(width: 4),
             ],
           ),
         ],
@@ -296,6 +308,15 @@ class _AttachmentChip extends StatelessWidget {
   const _AttachmentChip(
       {super.key, required this.attachment, required this.onRemove});
 
+  String _truncateFileName(String name) {
+    if (name.length <= 12) return name;
+
+    // Tail-Preservation Logic: Extract first 4 and last 4 chars
+    final String extension = name.substring(name.length - 4);
+    final String prefix = name.substring(0, 4);
+    return "$prefix...$extension";
+  }
+
   @override
   Widget build(BuildContext context) {
     IconData icon;
@@ -312,7 +333,8 @@ class _AttachmentChip extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      constraints: const BoxConstraints(maxWidth: 120),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
@@ -321,20 +343,28 @@ class _AttachmentChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          const SizedBox(width: 4), // Added leading spacer for icon
           Icon(icon, color: const Color(0xFFD4AF37), size: 16),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4), // Reduced spacer
           Flexible(
             child: Text(
-              attachment.title,
+              _truncateFileName(attachment.title),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.outfit(color: Colors.white70, fontSize: 12),
+              style: GoogleFonts.outfit(
+                color: Colors.white70,
+                fontSize: 12,
+                letterSpacing: -0.2,
+              ),
             ),
           ),
           const SizedBox(width: 4),
           GestureDetector(
             onTap: onRemove,
-            child: const Icon(Icons.close, color: Colors.white38, size: 14),
+            child: const Padding(
+              padding: EdgeInsets.all(2.0),
+              child: Icon(Icons.close, color: Colors.white38, size: 14),
+            ),
           ),
         ],
       ),

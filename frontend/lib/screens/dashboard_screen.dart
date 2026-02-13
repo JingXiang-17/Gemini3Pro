@@ -7,7 +7,6 @@ import '../widgets/source_sidebar_container.dart';
 import '../widgets/verdict_pane.dart';
 import '../widgets/veriscan_interactive_text.dart';
 import '../widgets/mobile/mobile_sticky_header.dart';
-import '../widgets/mobile/mobile_media_tray.dart';
 import '../widgets/mobile/mobile_source_library.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -31,8 +30,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   int _mobileSelectedIndex = 0;
 
   // Attachments State
-  List<SourceAttachment> _pendingAttachments = [];
-  List<SourceAttachment> _migratedAttachments = [];
+  final List<SourceAttachment> _pendingAttachments = [];
+  final List<SourceAttachment> _migratedAttachments = [];
   final Map<String, GlobalKey> _chipKeys = {};
 
   List<int> _activeCitationIndices = [];
@@ -65,7 +64,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     final text = _inputController.text.trim();
     if (text.isEmpty &&
         _pendingAttachments.isEmpty &&
-        _migratedAttachments.isEmpty) return;
+        _migratedAttachments.isEmpty) {
+      return;
+    }
 
     // 1. Start Migration Animation
     if (_pendingAttachments.isNotEmpty) {
@@ -154,18 +155,15 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   void _handleSupportSelected(GroundingSupport? support) {
-    if (support == null) {
-      setState(() {
+    setState(() {
+      if (_activeSupport == support) {
         _activeSupport = null;
         _activeCitationIndices = [];
-      });
-      return;
-    }
-
-    setState(() {
-      _activeSupport = support;
-      _activeCitationIndices = support.groundingChunkIndices;
-      if (!_isSidebarExpanded) _isSidebarExpanded = true;
+      } else {
+        _activeSupport = support;
+        _activeCitationIndices = support?.groundingChunkIndices ?? [];
+        if (!_isSidebarExpanded) _isSidebarExpanded = true;
+      }
     });
 
     if (_result != null &&
@@ -221,15 +219,14 @@ class _DashboardScreenState extends State<DashboardScreen>
           Container(
             width: 80,
             color: Colors.black,
-            child: Column(
+            child: const Column(
               children: [
-                const SizedBox(height: 30),
-                const Icon(Icons.shield_outlined,
-                    color: Color(0xFFD4AF37), size: 40),
-                const SizedBox(height: 40),
-                const _SidebarIcons(icon: Icons.dashboard, isActive: true),
-                const _SidebarIcons(icon: Icons.history, isActive: false),
-                const _SidebarIcons(icon: Icons.settings, isActive: false),
+                SizedBox(height: 30),
+                Icon(Icons.shield_outlined, color: Color(0xFFD4AF37), size: 40),
+                SizedBox(height: 40),
+                _SidebarIcons(icon: Icons.dashboard, isActive: true),
+                _SidebarIcons(icon: Icons.history, isActive: false),
+                _SidebarIcons(icon: Icons.settings, isActive: false),
               ],
             ),
           ),
@@ -270,7 +267,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       const SizedBox(height: 24),
                       Expanded(
                         child: _result == null
-                            ? _buildHighContrastEmptyState()
+                            ? _buildForensicHubGrid()
                             : SingleChildScrollView(
                                 child: VeriscanInteractiveText(
                                   analysisText: _result!.analysis,
@@ -335,29 +332,18 @@ class _DashboardScreenState extends State<DashboardScreen>
             ],
           ),
 
-          // Floating Action Area (Media Tray + Action Bar)
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  MobileMediaTray(
-                    attachments: _pendingAttachments,
-                    onRemoveAttachment: _handleRemoveAttachment,
-                  ),
-                  const SizedBox(height: 8),
-                  GlassActionBar(
-                    controller: _inputController,
-                    onAnalyze: _handleAnalysis,
-                    attachments: _pendingAttachments,
-                    chipKeys: _chipKeys,
-                    onAddAttachment: _handleAddAttachment,
-                    onRemoveAttachment: _handleRemoveAttachment,
-                    isLoading: _isLoading,
-                  ),
-                ],
+              child: GlassActionBar(
+                controller: _inputController,
+                onAnalyze: _handleAnalysis,
+                attachments: _pendingAttachments,
+                chipKeys: _chipKeys,
+                onAddAttachment: _handleAddAttachment,
+                onRemoveAttachment: _handleRemoveAttachment,
+                isLoading: _isLoading,
               ),
             ),
           ),
@@ -401,34 +387,40 @@ class _DashboardScreenState extends State<DashboardScreen>
           delegate: MobileStickyHeaderDelegate(result: _result),
         ),
 
-        // Forensic Analysis Section
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-          sliver: SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.02),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
-                  width: 0.5,
+        if (_result == null)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 160),
+              child: _buildForensicHubGrid(),
+            ),
+          )
+        else ...[
+          // Forensic Analysis Section
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+            sliver: SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.02),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                    width: 0.5,
+                  ),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("FORENSIC ANALYSIS",
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFFD4AF37),
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                      )),
-                  const SizedBox(height: 16),
-                  if (_result == null)
-                    _buildHighContrastEmptyState()
-                  else
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("FORENSIC ANALYSIS",
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFFD4AF37),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                        )),
+                    const SizedBox(height: 16),
                     VeriscanInteractiveText(
                       analysisText: _result!.analysis,
                       groundingSupports: _result!.groundingSupports,
@@ -436,11 +428,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                       activeSupport: _activeSupport,
                       onSupportSelected: _handleSupportSelected,
                     ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
 
         // Key Findings Section (If available)
         if (_result != null && _result!.keyFindings.isNotEmpty)
@@ -494,31 +487,90 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               ),
             ),
-          )
-        else if (_result == null)
-          // Maintain spacing for floating bar even when empty
-          const SliverPadding(padding: EdgeInsets.only(bottom: 160)),
+          ),
       ],
     );
   }
 
-  Widget _buildHighContrastEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40),
+  Widget _buildForensicHubGrid() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.02),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: const Color(0xFFD4AF37).withValues(alpha: 0.1),
+          width: 0.5,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.biotech_outlined,
+              size: 48, color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+          const SizedBox(height: 16),
+          Text(
+            "Awaiting Forensic Ingestion...",
+            style: GoogleFonts.outfit(
+              color: const Color(0xFFE0E0E0),
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            "CAPABILITIES",
+            style: GoogleFonts.outfit(
+              color: const Color(0xFFD4AF37),
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Capabilities Grid Section
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  _buildCapabilityItem(Icons.verified_user_outlined, "Claims"),
+                  const SizedBox(width: 12),
+                  _buildCapabilityItem(Icons.image_search, "Media"),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _buildCapabilityItem(Icons.find_in_page_outlined, "Sources"),
+                  const SizedBox(width: 12),
+                  _buildCapabilityItem(Icons.history_edu, "Archives"),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCapabilityItem(IconData icon, String label) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
+        ),
         child: Column(
           children: [
-            Icon(Icons.biotech_outlined,
-                size: 48,
-                color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
-            const SizedBox(height: 16),
+            Icon(icon, color: const Color(0xFFD4AF37), size: 24),
+            const SizedBox(height: 8),
             Text(
-              "Awaiting Forensic Ingestion...",
-              style: GoogleFonts.outfit(
-                color: const Color(0xFFE0E0E0),
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              label,
+              style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12),
             ),
           ],
         ),

@@ -24,7 +24,7 @@ class ResultCard extends StatelessWidget {
         final isMobile = MediaQuery.of(context).size.width < 600;
 
         if (result == null) {
-          return Center(
+          return const Center(
             child: Text(
               "Waiting for analysis...",
               style: TextStyle(color: Colors.white24),

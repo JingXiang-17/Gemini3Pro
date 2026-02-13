@@ -24,7 +24,7 @@ class MobileStickyHeaderDelegate extends SliverPersistentHeaderDelegate {
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     // Use a Stack to add a background blur effect when sticky
     return Material(
-      color: Colors.black.withOpacity(shrinkOffset > 0 ? 0.9 : 1.0),
+      color: Colors.black.withValues(alpha: shrinkOffset > 0 ? 0.9 : 1.0),
       child: _HeaderContent(result: result),
     );
   }
@@ -74,13 +74,14 @@ class _HeaderContent extends StatelessWidget {
               height: 100,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color:
-                    isUnverified ? Colors.black : accentColor.withOpacity(0.15),
+                color: isUnverified
+                    ? Colors.black
+                    : accentColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isUnverified
-                      ? const Color(0xFFD4AF37).withOpacity(0.5)
-                      : accentColor.withOpacity(0.5),
+                      ? const Color(0xFFD4AF37).withValues(alpha: 0.5)
+                      : accentColor.withValues(alpha: 0.5),
                   width: 1.5,
                 ),
               ),
@@ -121,49 +122,56 @@ class _HeaderContent extends StatelessWidget {
               height: 100,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.white12),
               ),
               child: Row(
                 children: [
                   Expanded(
+                    flex: 2,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          "TRUST",
-                          style: GoogleFonts.outfit(
-                            color: Colors.white54,
-                            letterSpacing: 1.5,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                        FittedBox(
+                          child: Text(
+                            "TRUST",
+                            style: GoogleFonts.outfit(
+                              color: Colors.white54,
+                              letterSpacing: 1.5,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                        Text(
-                          "SCORE",
-                          style: GoogleFonts.outfit(
-                            color: Colors.white54,
-                            letterSpacing: 1.5,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                        FittedBox(
+                          child: Text(
+                            "SCORE",
+                            style: GoogleFonts.outfit(
+                              color: Colors.white54,
+                              letterSpacing: 1.5,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  // Trust Gauge with FittedBox to prevent overflow
-                  SizedBox(
-                    width: 64,
-                    height: 64,
-                    child: Center(
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: ConfidenceGauge(
-                            score: hasResult ? result!.confidenceScore : 0.0),
+                  const SizedBox(width: 4),
+                  // Trust Gauge with Flexible to prevent overflow
+                  Flexible(
+                    flex: 3,
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          child: ConfidenceGauge(
+                              score: hasResult ? result!.confidenceScore : 0.0),
+                        ),
                       ),
                     ),
                   ),
