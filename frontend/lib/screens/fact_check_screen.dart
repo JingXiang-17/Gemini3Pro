@@ -190,6 +190,7 @@ class _FactCheckScreenState extends State<FactCheckScreen> {
             analysisText: _result!.analysis,
             groundingSupports: _result!.groundingSupports,
             groundingCitations: _result!.groundingCitations,
+            attachments: const [],
           ),
           // ----------------------------------
 

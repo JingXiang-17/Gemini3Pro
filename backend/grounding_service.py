@@ -136,6 +136,16 @@ class GroundingService:
                         logger.error(f"[CRITICAL] Index {idx} out of bounds! Excluding.")
                 
                 if valid_indices:
+                    confidence_scores = []
+                    for idx in valid_indices:
+                        src_status = sources[idx].get('status', 'live')
+                        if src_status == 'live':
+                            confidence_scores.append(0.9)
+                        elif src_status == 'restricted':
+                            confidence_scores.append(0.6)
+                        else: # dead
+                            confidence_scores.append(0.4)
+
                     supports.append({
                         "segment": {
                             "startIndex": segment['startIndex'],
@@ -143,7 +153,7 @@ class GroundingService:
                             "text": segment['text']
                         },
                         "groundingChunkIndices": valid_indices,
-                        "confidenceScores": [0.9] * len(valid_indices) # Mock confidence
+                        "confidenceScores": confidence_scores
                     })
                     all_referenced_indices.extend(valid_indices)
 

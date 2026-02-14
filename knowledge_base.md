@@ -66,3 +66,17 @@ This file serves as a persistent memory for the project. It documents errors, ro
 *   **Calculation**: **Model-Generated** by Gemini 2.0 Flash Lite.
 *   **Prompt Instruction**: "Assign a confidence score from 0.0 to 1.0 based on the strength of grounding citations."
 *   **Code Location**: `backend/main.py` (System Instruction) -> `AnalysisResponse.confidence_score` -> `frontend/lib/widgets/confidence_gauge.dart`.
+#### Mouse Tracker Assertion Error (Web)
+*   **Context**: `Assertion failed: ... mouse_tracker.dart:199:12` occurs during layout shifts (e.g., bar expansion or result loading) while the mouse is moving.
+*   **Root Cause**: Flutter's hit-test tree becoming desynchronized during rapid widget tree mutations or animations.
+*   **Solution**: 
+    1.  Wrap dynamic/shifting components in `RepaintBoundary`.
+    2.  Use `ValueKey` to stabilize the identity of interactive elements (buttons, chips).
+    3.  Add `AnimatedSize` with a stable curve (e.g., `Curves.fastOutSlowIn`) to smooth transitions.
+
+### Deployment & Environment
+
+#### Firebase 2nd Gen Function URL
+*   **Observation**: Standard `cloudfunctions.net` URL might not work for 2nd gen functions.
+*   **Discovery**: The function URL is often `https://[function-name]-[hash]-[region].a.run.app`.
+*   **Configuration**: Update `FactCheckService` with the correct endpoint found in the Firebase Console/CLI output.

@@ -29,6 +29,7 @@ class GlassActionBar extends StatefulWidget {
 
 class _GlassActionBarState extends State<GlassActionBar> {
   bool _isUpdating = false;
+  bool _showSocialReminder = false;
 
   @override
   void initState() {
@@ -46,6 +47,16 @@ class _GlassActionBarState extends State<GlassActionBar> {
         caseSensitive: false);
 
     final matches = urlRegex.allMatches(text);
+
+    // Social Detection
+    final socialRegex = RegExp(
+        r'(instagram\.com|facebook\.com|twitter\.com|x\.com|tiktok\.com)',
+        caseSensitive: false);
+    final hasSocial = socialRegex.hasMatch(text);
+    if (_showSocialReminder != hasSocial) {
+      setState(() => _showSocialReminder = hasSocial);
+    }
+
     if (matches.isEmpty) return;
 
     String currentText = text;
@@ -175,6 +186,40 @@ class _GlassActionBarState extends State<GlassActionBar> {
                   ),
                 ),
               ],
+              if (_showSocialReminder)
+                Padding(
+                  padding:
+                      const EdgeInsets.only(bottom: 8.0, left: 48, right: 48),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color:
+                              const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.tips_and_updates,
+                            color: Color(0xFFD4AF37), size: 14),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Pro-Tip: Social media links can be volatile. For best results, upload a screenshot or screen recording as forensic evidence.",
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFFD4AF37),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               Row(
                 children: [
                   _PickerButton(

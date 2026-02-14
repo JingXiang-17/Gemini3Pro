@@ -22,7 +22,7 @@ import firebase_admin
 
 # Import models
 from models import AnalysisRequest, AnalysisResponse, GroundingCitation, GroundingSupport
-from grounding_service import GroundingService
+# from grounding_service import GroundingService
 
 # --- Initialization ---
 load_dotenv()
@@ -33,7 +33,14 @@ if not firebase_admin._apps:
     initialize_app()
 
 app = FastAPI(title="VeriScan Core Engine")
-grounding_service = GroundingService()
+_grounding_service = None
+
+def get_grounding_service():
+    global _grounding_service
+    if _grounding_service is None:
+        from grounding_service import GroundingService
+        _grounding_service = GroundingService()
+    return _grounding_service
 
 app.add_middleware(
     CORSMiddleware,
@@ -137,6 +144,7 @@ Schema:
 - Tone should be professional, objective, and "Obsidian-class".
 - If a citation refers to an uploaded file, include the exact filename in the "title" or "snippet" of the citation.
 """
+        from models import GroundingCitation, GroundingSupport, AnalysisResponse
         tools = [Tool.from_dict({"google_search": {}})]
         model = GenerativeModel("gemini-2.0-flash-lite-001", system_instruction=[system_instruction], tools=tools)
         
@@ -189,7 +197,7 @@ Schema:
         if not data.get("grounding_citations") and grounding_citations:
              data["grounding_citations"] = [g.model_dump() for g in grounding_citations]
         
-        # Sanitization & Filename Mapping
+        # Sanitization & Filename Mapping & URL Diagnostic
         sanitized_citations = []
         for gc in data.get("grounding_citations", []):
             if isinstance(gc, dict):
@@ -205,6 +213,21 @@ Schema:
                     gc["url"] = "No source link available"
                 if not gc.get("title"):
                     gc["title"] = matched_file or "Untitled Source"
+                
+                # URL Diagnostic Logic
+                url_str = gc.get("url", "").lower()
+                snippet_str = gc.get("snippet", "").lower()
+                
+                status = "live"
+                # Check for Social Media (Restricted)
+                social_domains = ["instagram.com", "facebook.com", "twitter.com", "x.com", "tiktok.com", "reddit.com"]
+                if any(domain in url_str for domain in social_domains):
+                    status = "restricted"
+                # Check for Dead Link / Inaccessible
+                elif not gc.get("snippet") or "failed to fetch" in snippet_str or "could not be reached" in snippet_str:
+                    status = "dead"
+                
+                gc["status"] = status
                 sanitized_citations.append(gc)
             else:
                 sanitized_citations.append(gc)
@@ -217,16 +240,22 @@ Schema:
             title_val = gc.get("title") if isinstance(gc, dict) else getattr(gc, "title", "")
             snippet_val = gc.get("snippet") if isinstance(gc, dict) else getattr(gc, "snippet", "")
             
+            status_val = gc.get("status", "live") if isinstance(gc, dict) else getattr(gc, "status", "live")
+            
             service_sources.append({
                 "uri": url_val or "No source link available",
                 "title": title_val or "Untitled Source",
-                "text": snippet_val or title_val
+                "text": snippet_val or title_val,
+                "status": status_val
             })
         
+        
+        grounding_service = get_grounding_service()
         grounding_result = grounding_service.process(data.get("analysis", ""), service_sources)
         data["grounding_supports"] = grounding_result.get("groundingSupports", [])
 
         try:
+            from models import AnalysisResponse
             return AnalysisResponse(**data)
         except Exception as e:
             logger.error(f"Pydantic Validation Error: {e}")

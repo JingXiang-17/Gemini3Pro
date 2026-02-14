@@ -44,11 +44,15 @@ class GroundingCitation {
   final String title;
   final String url;
   final String snippet;
+  final String? sourceFile;
+  final String status;
 
   GroundingCitation({
     required this.title,
     required this.url,
     required this.snippet,
+    this.sourceFile,
+    this.status = 'live',
   });
 
   factory GroundingCitation.fromJson(Map<String, dynamic> json) {
@@ -56,6 +60,8 @@ class GroundingCitation {
       title: json['title'] ?? '',
       url: json['url'] ?? '',
       snippet: json['snippet'] ?? '',
+      sourceFile: json['source_file'],
+      status: json['status'] ?? 'live',
     );
   }
 }

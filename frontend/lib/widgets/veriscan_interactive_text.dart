@@ -8,6 +8,7 @@ class VeriscanInteractiveText extends StatefulWidget {
   final String analysisText;
   final List<GroundingSupport> groundingSupports;
   final List<GroundingCitation> groundingCitations;
+  final List<SourceAttachment> attachments;
   final GroundingSupport? activeSupport;
   final Function(GroundingSupport?)? onSupportSelected;
 
@@ -16,6 +17,7 @@ class VeriscanInteractiveText extends StatefulWidget {
     required this.analysisText,
     required this.groundingSupports,
     required this.groundingCitations,
+    required this.attachments,
     this.activeSupport,
     this.onSupportSelected,
   });
@@ -68,32 +70,37 @@ class _VeriscanInteractiveTextState extends State<VeriscanInteractiveText> {
     final beforeChunks = chunks.sublist(0, splitIndex);
     final afterChunks = chunks.sublist(splitIndex);
 
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.fastOutSlowIn,
-      alignment: Alignment.topCenter,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildRichTextBlock(beforeChunks, baseStyle, strutStyle),
-          if (activeChunkIndex != -1)
-            Padding(
-              key: ValueKey(widget.activeSupport!.segment.startIndex),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Column(
-                children: _getReferencedCitations(widget.activeSupport!)
-                    .map((citation) => EvidenceCard(
-                          title: citation.title,
-                          snippet: citation.snippet,
-                          url: citation.url,
-                          isActive: true,
-                        ))
-                    .toList(),
+    return RepaintBoundary(
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.fastOutSlowIn,
+        alignment: Alignment.topCenter,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildRichTextBlock(beforeChunks, baseStyle, strutStyle),
+            if (activeChunkIndex != -1)
+              Padding(
+                key: ValueKey(widget.activeSupport!.segment.startIndex),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Column(
+                  children: _getReferencedCitations(widget.activeSupport!)
+                      .map((citation) => EvidenceCard(
+                            title: citation.title,
+                            snippet: citation.snippet,
+                            url: citation.url,
+                            sourceFile: citation.sourceFile,
+                            attachments: widget.attachments,
+                            status: citation.status,
+                            isActive: true,
+                          ))
+                      .toList(),
+                ),
               ),
-            ),
-          if (afterChunks.isNotEmpty)
-            _buildRichTextBlock(afterChunks, baseStyle, strutStyle),
-        ],
+            if (afterChunks.isNotEmpty)
+              _buildRichTextBlock(afterChunks, baseStyle, strutStyle),
+          ],
+        ),
       ),
     );
   }
@@ -154,11 +161,20 @@ class _VeriscanInteractiveTextState extends State<VeriscanInteractiveText> {
                   padding: const EdgeInsets.only(left: 2.0),
                   child: Transform.translate(
                     offset: const Offset(0, 4),
-                    child: const Icon(
-                      Icons.diamond,
-                      size: 8,
-                      color: kGold,
-                    ),
+                    child: Builder(builder: (context) {
+                      final citations = _getReferencedCitations(chunk.support!);
+                      final bool isInaccessible = citations.isNotEmpty &&
+                          (citations.first.status == 'dead' ||
+                              citations.first.status == 'restricted');
+
+                      return Icon(
+                        isInaccessible
+                            ? Icons.warning_amber_rounded
+                            : Icons.diamond,
+                        size: isInaccessible ? 10 : 8,
+                        color: isInaccessible ? Colors.white24 : kGold,
+                      );
+                    }),
                   ),
                 ),
               ),

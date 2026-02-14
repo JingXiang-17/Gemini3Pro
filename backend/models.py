@@ -11,6 +11,7 @@ class GroundingCitation(BaseModel):
     url: Optional[str] = ""
     snippet: str = ""
     source_file: Optional[str] = None
+    status: str = "live"
 
 class MediaLiteracy(BaseModel):
     logical_fallacies: List[str]

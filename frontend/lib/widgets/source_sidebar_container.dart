@@ -153,19 +153,42 @@ class _SourceSidebarContainerState extends State<SourceSidebarContainer> {
   }
 
   Widget _buildEvidenceList() {
+    final Map<String, int> sourceCounts = {};
+    final List<GroundingCitation> uniqueCitations = [];
+    final Map<String, int> firstOccurrenceIndex = {};
+
+    for (int i = 0; i < widget.citations.length; i++) {
+      final citation = widget.citations[i];
+      final key = "${citation.title}|${citation.url}";
+      if (!sourceCounts.containsKey(key)) {
+        sourceCounts[key] = 1;
+        uniqueCitations.add(citation);
+        firstOccurrenceIndex[key] = i;
+      } else {
+        sourceCounts[key] = sourceCounts[key]! + 1;
+      }
+    }
+
     return ListView.builder(
       key: const ValueKey("evidence"),
       controller: widget.scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: widget.citations.length,
+      itemCount: uniqueCitations.length,
       itemBuilder: (context, index) {
-        final citation = widget.citations[index];
-        final isActive = widget.activeIndices.contains(index);
+        final citation = uniqueCitations[index];
+        final key = "${citation.title}|${citation.url}";
+        final count = sourceCounts[key] ?? 1;
+        final originalIndex = firstOccurrenceIndex[key] ?? 0;
+        final isActive = widget.activeIndices.contains(originalIndex);
+
         return SourceTile(
           title: citation.title,
           url: citation.url,
+          attachments: widget.uploadedAttachments,
+          status: citation.status,
+          count: count,
           isActive: isActive,
-          onTap: () => widget.onCitationSelected(index),
+          onTap: () => widget.onCitationSelected(originalIndex),
         );
       },
     );
@@ -185,6 +208,7 @@ class _SourceSidebarContainerState extends State<SourceSidebarContainer> {
             child: SourceTile(
               title: attachment.title,
               url: attachment.url ?? "",
+              attachments: widget.uploadedAttachments,
               isActive: false,
               onDelete: () => widget.onDeleteAttachment(attachment.id),
             ),

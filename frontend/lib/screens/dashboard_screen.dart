@@ -381,6 +381,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                                 _result!.groundingSupports,
                                             groundingCitations:
                                                 _result!.groundingCitations,
+                                            attachments: _migratedAttachments,
                                             activeSupport: _activeSupport,
                                             onSupportSelected:
                                                 _handleSupportSelected,
@@ -552,6 +553,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         analysisText: _result!.analysis,
                         groundingSupports: _result!.groundingSupports,
                         groundingCitations: _result!.groundingCitations,
+                        attachments: _migratedAttachments,
                         activeSupport: _activeSupport,
                         onSupportSelected: _handleSupportSelected,
                       ),

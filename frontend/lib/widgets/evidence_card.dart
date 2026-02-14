@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:html' as html;
+import 'dart:ui_web' as ui_web;
+import '../models/grounding_models.dart';
 
 class EvidenceCard extends StatefulWidget {
   final String title;
   final String snippet;
   final String url;
+  final String? sourceFile;
+  final List<SourceAttachment>? attachments;
+  final String status;
   final bool isActive;
   final VoidCallback? onDelete;
 
@@ -14,6 +21,9 @@ class EvidenceCard extends StatefulWidget {
     required this.title,
     required this.snippet,
     required this.url,
+    this.sourceFile,
+    this.attachments,
+    this.status = 'live',
     this.isActive = false,
     this.onDelete,
   });
@@ -25,12 +35,244 @@ class EvidenceCard extends StatefulWidget {
 class _EvidenceCardState extends State<EvidenceCard> {
   bool _isExpanded = false;
 
+  bool get _isUploadedFile =>
+      widget.sourceFile != null || !widget.url.startsWith('http');
+
+  String get _actionLabel {
+    if (_isUploadedFile) {
+      final attachment = _findAttachment();
+      if (attachment != null && attachment.file != null) {
+        return "VIEW EVIDENCE";
+      }
+      return "VIEW ATTACHMENT";
+    }
+    return "VISIT SOURCE";
+  }
+
+  SourceAttachment? _findAttachment() {
+    return widget.attachments?.firstWhere(
+      (a) => a.title == widget.sourceFile || a.title == widget.title,
+      orElse: () => SourceAttachment(
+        id: 'external',
+        title: widget.sourceFile ?? widget.title,
+        type: AttachmentType.link,
+      ),
+    );
+  }
+
+  Future<void> _handleViewAction() async {
+    if (_isUploadedFile) {
+      final attachment = _findAttachment();
+      if (attachment != null && attachment.file != null) {
+        _openNativeFile(attachment.file as PlatformFile);
+      } else {
+        _showForensicNote();
+      }
+    } else if (widget.status == 'dead' || widget.status == 'restricted') {
+      _showDiagnosticPopup();
+    } else {
+      _launchUrl();
+    }
+  }
+
+  void _showDiagnosticPopup() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.analytics_outlined, color: Color(0xFFD4AF37)),
+            const SizedBox(width: 10),
+            Text(
+              "Forensic Diagnostic",
+              style: GoogleFonts.outfit(
+                  color: const Color(0xFFD4AF37), fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text(
+          "Notice: This external link is inaccessible or restricted. Forensic analysis was based on the multimodal ingestion provided during the upload.",
+          style: GoogleFonts.outfit(color: Colors.white70, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("DISMISS",
+                style: GoogleFonts.outfit(
+                    color: const Color(0xFFD4AF37),
+                    fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _launchUrl() async {
     if (widget.url.isEmpty) return;
     final Uri uri = Uri.parse(widget.url);
-    if (!await launchUrl(uri)) {
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       debugPrint('Could not launch $uri');
     }
+  }
+
+  String _getMimeType(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'gif':
+        return 'image/gif';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
+  Future<void> _openNativeFile(PlatformFile file) async {
+    if (file.bytes == null) {
+      _showForensicNote();
+      return;
+    }
+
+    final String mimeType = _getMimeType(file.name);
+
+    if (mimeType.startsWith('image/')) {
+      _showImageDialog(file);
+    } else if (mimeType == 'application/pdf') {
+      _showPdfDialog(file);
+    } else {
+      final blob = html.Blob([file.bytes!], mimeType);
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      html.window.open(url, '_blank');
+    }
+  }
+
+  void _showPdfDialog(PlatformFile file) {
+    final blob = html.Blob([file.bytes!], 'application/pdf');
+    final url = html.Url.createObjectUrlFromBlob(blob);
+
+    // Register the factory for this specific PDF URL
+    final viewId = 'pdf-view-${file.name.hashCode}';
+    ui_web.platformViewRegistry.registerViewFactory(viewId, (int viewId) {
+      return html.IFrameElement()
+        ..src = url
+        ..style.border = 'none'
+        ..style.width = '100%'
+        ..style.height = '100%';
+    });
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        insetPadding: const EdgeInsets.all(40),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.white10)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    file.name,
+                    style: GoogleFonts.outfit(
+                        color: const Color(0xFFD4AF37),
+                        fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(bottom: Radius.circular(16)),
+                child: HtmlElementView(viewType: viewId),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showImageDialog(PlatformFile file) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            Flexible(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(
+                  file.bytes!,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              file.name,
+              style: GoogleFonts.outfit(color: Colors.white70, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showForensicNote() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          "Forensic Note",
+          style: GoogleFonts.outfit(
+              color: const Color(0xFFD4AF37), fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          "This is an analyzed attachment. To view the original, please refer to your local file: ${widget.sourceFile ?? widget.title}",
+          style: GoogleFonts.outfit(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("OK",
+                style: GoogleFonts.outfit(color: const Color(0xFFD4AF37))),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -110,7 +352,7 @@ class _EvidenceCardState extends State<EvidenceCard> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  "VISIT SOURCE",
+                                  _actionLabel,
                                   style: GoogleFonts.outfit(
                                     color: Colors.white24,
                                     fontSize: 9,
@@ -120,10 +362,14 @@ class _EvidenceCardState extends State<EvidenceCard> {
                                 ),
                                 const SizedBox(width: 4),
                                 IconButton(
-                                  tooltip: "Open Source in Browser",
-                                  icon: const Icon(Icons.open_in_new,
-                                      color: Colors.white54, size: 14),
-                                  onPressed: _launchUrl,
+                                  tooltip: "View Attachment or Link",
+                                  icon: Icon(
+                                      _isUploadedFile
+                                          ? Icons.visibility_outlined
+                                          : Icons.open_in_new,
+                                      color: Colors.white54,
+                                      size: 14),
+                                  onPressed: _handleViewAction,
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                 ),
@@ -142,46 +388,72 @@ class _EvidenceCardState extends State<EvidenceCard> {
                             color: Colors.white.withValues(alpha: 0.05),
                           ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.snippet,
-                              maxLines: _isExpanded ? null : 3,
-                              overflow:
-                                  _isExpanded ? null : TextOverflow.ellipsis,
-                              style: GoogleFonts.outfit(
-                                color: Colors.white.withValues(alpha: 0.85),
-                                fontSize: 13,
-                                height: 1.5,
-                                fontStyle: FontStyle.italic,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final textPainter = TextPainter(
+                              text: TextSpan(
+                                text: widget.snippet,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  height: 1.5,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              maxLines: 3,
+                              textDirection: TextDirection.ltr,
+                            )..layout(maxWidth: constraints.maxWidth);
+
+                            final bool isTruncated =
+                                textPainter.didExceedMaxLines;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _isExpanded ? "SHOW LESS" : "READ FULL TEXT",
+                                  widget.snippet,
+                                  maxLines: _isExpanded ? null : 3,
+                                  overflow: _isExpanded
+                                      ? null
+                                      : TextOverflow.ellipsis,
                                   style: GoogleFonts.outfit(
-                                    color: const Color(0xFFD4AF37),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                    fontSize: 13,
+                                    height: 1.5,
+                                    fontStyle: FontStyle.italic,
                                   ),
                                 ),
-                                AnimatedRotation(
-                                  turns: _isExpanded ? 0.5 : 0.0,
-                                  duration: const Duration(milliseconds: 200),
-                                  child: const Icon(
-                                    Icons.expand_more,
-                                    color: Color(0xFFD4AF37),
-                                    size: 16,
+                                if (isTruncated) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        _isExpanded
+                                            ? "SHOW LESS"
+                                            : "READ FULL TEXT",
+                                        style: GoogleFonts.outfit(
+                                          color: const Color(0xFFD4AF37),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                      AnimatedRotation(
+                                        turns: _isExpanded ? 0.5 : 0.0,
+                                        duration:
+                                            const Duration(milliseconds: 200),
+                                        child: const Icon(
+                                          Icons.expand_more,
+                                          color: Color(0xFFD4AF37),
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
+                                ],
                               ],
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ),
                     ],

@@ -7,7 +7,7 @@ import '../models/grounding_models.dart';
 
 class FactCheckService {
   final String baseUrl = kReleaseMode
-      ? 'https://us-central1-veriscan-kitahack.cloudfunctions.net/analyze'
+      ? 'https://analyze-r4zi2m3nfa-uc.a.run.app'
       : 'http://127.0.0.1:8080';
 
   Future<AnalysisResponse> analyzeNews({

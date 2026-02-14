@@ -90,16 +90,39 @@ class _MobileSourceLibraryState extends State<MobileSourceLibrary> {
       );
     }
 
+    final Map<String, int> sourceCounts = {};
+    final List<GroundingCitation> uniqueCitations = [];
+    final Map<String, int> firstOccurrenceIndex = {};
+
+    for (int i = 0; i < widget.citations.length; i++) {
+      final citation = widget.citations[i];
+      final key = "${citation.title}|${citation.url}";
+      if (!sourceCounts.containsKey(key)) {
+        sourceCounts[key] = 1;
+        uniqueCitations.add(citation);
+        firstOccurrenceIndex[key] = i;
+      } else {
+        sourceCounts[key] = sourceCounts[key]! + 1;
+      }
+    }
+
     return ListView.builder(
       key: const ValueKey("evidence_list"),
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: widget.citations.length,
+      itemCount: uniqueCitations.length,
       itemBuilder: (context, index) {
-        final citation = widget.citations[index];
+        final citation = uniqueCitations[index];
+        final key = "${citation.title}|${citation.url}";
+        final count = sourceCounts[key] ?? 1;
+        final originalIndex = firstOccurrenceIndex[key] ?? 0;
+
         return SourceTile(
           title: citation.title,
           url: citation.url,
-          onTap: () => widget.onCitationSelected(index),
+          attachments: widget.uploadedAttachments,
+          status: citation.status,
+          count: count,
+          onTap: () => widget.onCitationSelected(originalIndex),
         );
       },
     );
@@ -124,6 +147,7 @@ class _MobileSourceLibraryState extends State<MobileSourceLibrary> {
         return SourceTile(
           title: attachment.title,
           url: attachment.url ?? "",
+          attachments: widget.uploadedAttachments,
           onDelete: () => widget.onDeleteAttachment(attachment.id),
         );
       },
