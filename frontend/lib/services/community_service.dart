@@ -3,7 +3,9 @@ import 'package:http/http.dart' as http;
 import '../models/community_models.dart';
 
 class CommunityService {
-  // Update this with your backend URL
+  // TODO: Replace with environment-specific URL for production
+  // Development: http://localhost:8000/community
+  // Production: https://your-backend-url.com/community
   static const String baseUrl = 'http://localhost:8000/community';
 
   Future<CommunityClaimData> getClaimData(String claimText) async {

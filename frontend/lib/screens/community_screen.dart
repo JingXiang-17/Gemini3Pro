@@ -290,9 +290,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
             child: OutlinedButton(
               onPressed: () {
                 // In a full implementation, this would navigate to a discussion page
+                final previewText = claim.claimText.length > 30 
+                    ? claim.claimText.substring(0, 30) 
+                    : claim.claimText;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Discussion view for: ${claim.claimText.substring(0, 30)}...'),
+                    content: Text('Discussion view for: $previewText...'),
                     backgroundColor: const Color(0xFFD4AF37),
                   ),
                 );

@@ -88,7 +88,9 @@ class _CommunityVoteBoxState extends State<CommunityVoteBox> {
   Future<void> _handleSupportVerdict() async {
     if (_claimData?.claimId == null) return;
 
-    // Demo user - in production, get from authentication
+    // TODO: Replace with actual user authentication in production
+    // This is a placeholder that allows anyone to vote as 'demo_user'
+    // Production implementation should use: await AuthService.getCurrentUserId()
     const userId = 'demo_user';
     final vote = widget.aiVerdict == 'REAL';
 
