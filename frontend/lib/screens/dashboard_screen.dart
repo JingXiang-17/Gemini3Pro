@@ -8,6 +8,7 @@ import '../widgets/verdict_pane.dart';
 import '../widgets/veriscan_interactive_text.dart';
 import '../widgets/mobile/mobile_sticky_header.dart';
 import '../widgets/mobile/mobile_source_library.dart';
+import 'community_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -311,14 +312,25 @@ class _DashboardScreenState extends State<DashboardScreen>
           Container(
             width: 80,
             color: Colors.black,
-            child: const Column(
+            child: Column(
               children: [
-                SizedBox(height: 30),
-                Icon(Icons.shield_outlined, color: Color(0xFFD4AF37), size: 40),
-                SizedBox(height: 40),
-                _SidebarIcons(icon: Icons.dashboard, isActive: true),
-                _SidebarIcons(icon: Icons.history, isActive: false),
-                _SidebarIcons(icon: Icons.settings, isActive: false),
+                const SizedBox(height: 30),
+                const Icon(Icons.shield_outlined, color: Color(0xFFD4AF37), size: 40),
+                const SizedBox(height: 40),
+                const _SidebarIcons(icon: Icons.dashboard, isActive: true),
+                const _SidebarIcons(icon: Icons.history, isActive: false),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CommunityScreen(),
+                      ),
+                    );
+                  },
+                  child: const _SidebarIcons(icon: Icons.groups, isActive: false),
+                ),
+                const _SidebarIcons(icon: Icons.settings, isActive: false),
               ],
             ),
           ),

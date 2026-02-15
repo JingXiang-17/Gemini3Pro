@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/grounding_models.dart';
 import 'confidence_gauge.dart';
+import 'community_vote_box.dart';
 
 class VerdictPane extends StatelessWidget {
   final AnalysisResponse? result;
@@ -158,6 +159,17 @@ class VerdictPane extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // 4. Community Vote Box (Flex 4)
+          Expanded(
+            flex: 4,
+            child: CommunityVoteBox(
+              claimText: result?.analysis,
+              aiVerdict: result?.verdict,
             ),
           ),
         ],
