@@ -63,7 +63,7 @@ class FactCheckService {
       final streamedResponse = await request.send().timeout(
         const Duration(seconds: 120),
         onTimeout: () {
-          throw TimeoutException('Request timed out - backend may be warming up. Please try again.');
+          throw TimeoutException('Backend is warming up. Retrying automatically...');
         },
       );
       final response = await http.Response.fromStream(streamedResponse);
