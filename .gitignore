@@ -34,3 +34,8 @@ android/.gradle
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs & Test Assets
+deploy_log.txt
+firebase-debug.log
+tests/assets/

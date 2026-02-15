@@ -1,11 +1,13 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/grounding_models.dart';
 import '../services/fact_check_service.dart';
-import '../widgets/confidence_gauge.dart';
-import '../widgets/evidence_card.dart';
-import '../widgets/input_section.dart';
+import '../widgets/glass_action_bar.dart';
+import '../widgets/source_sidebar_container.dart';
+import '../widgets/verdict_pane.dart';
+import '../widgets/veriscan_interactive_text.dart';
+import '../widgets/mobile/mobile_sticky_header.dart';
+import '../widgets/mobile/mobile_source_library.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -14,320 +16,719 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with TickerProviderStateMixin {
   final FactCheckService _service = FactCheckService();
-  FactCheckResult? _result;
-  bool _isLoading = false;
+  final TextEditingController _inputController = TextEditingController();
+  final ScrollController _sidebarScrollController = ScrollController();
+  final GlobalKey _sidebarKey = GlobalKey();
+  final GlobalKey _sourcesTabKey = GlobalKey();
 
-  Color _getStatusColor(String verdict) {
-    switch (verdict.toUpperCase()) {
-      case 'REAL':
-        return const Color(0xFF4CAF50); // Green
-      case 'FAKE':
-        return const Color(0xFFE53935); // Red
-      case 'MISLEADING':
-        return Colors.orange;
-      case 'UNVERIFIED':
-        return const Color(0xFFFFC107); // Amber/Yellow
-      default:
-        return Colors.grey;
-    }
+  AnalysisResponse? _result;
+  bool _isLoading = false;
+  bool _hasError = false;
+  bool _isSidebarExpanded = true;
+  int _mobileSelectedIndex = 0;
+
+  // Attachments State
+  final List<SourceAttachment> _pendingAttachments = [];
+  final List<SourceAttachment> _migratedAttachments = [];
+  final Map<String, GlobalKey> _chipKeys = {};
+
+  List<int> _activeCitationIndices = [];
+  GroundingSupport? _activeSupport;
+
+  // ===========================================================================
+  //  LOGIC
+  // ===========================================================================
+
+  void _handleAddAttachment(SourceAttachment attachment) {
+    setState(() {
+      _pendingAttachments.add(attachment);
+    });
   }
 
-  Future<void> _handleAnalysis(
-      String? text, String? url, PlatformFile? image) async {
+  void _handleRemoveAttachment(String id) {
+    setState(() {
+      _pendingAttachments.removeWhere((a) => a.id == id);
+      _chipKeys.remove(id);
+    });
+  }
+
+  void _handleDeleteMigratedAttachment(String id) {
+    setState(() {
+      _migratedAttachments.removeWhere((a) => a.id == id);
+    });
+  }
+
+  Future<void> _handleAnalysis() async {
+    final text = _inputController.text.trim();
+    if (text.isEmpty &&
+        _pendingAttachments.isEmpty &&
+        _migratedAttachments.isEmpty) {
+      return;
+    }
+
+    // 1. Start Migration Animation
+    if (_pendingAttachments.isNotEmpty) {
+      await _animateMigration();
+    }
+
     setState(() {
       _isLoading = true;
-
+      _hasError = false;
       _result = null;
+      _activeSupport = null;
     });
+
+    final allAttachments = [..._migratedAttachments, ..._pendingAttachments];
+    final recentlyMigrated = List<SourceAttachment>.from(_pendingAttachments);
 
     try {
       final result = await _service.analyzeNews(
         text: text,
-        url: url,
-        imageBytes: image?.bytes, // This works for web and generic byte access
-        imageFilename: image?.name,
+        attachments: allAttachments,
       );
-
-      setState(() {
-        _result = result;
-      });
+      if (mounted) {
+        setState(() {
+          _result = result;
+          _migratedAttachments.addAll(recentlyMigrated);
+          _pendingAttachments.clear();
+          _chipKeys.clear();
+          _hasError = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        // _errorMessage = e.toString().replaceAll('Exception: ', '');
-        debugPrint('Error: $e');
-      });
+      debugPrint('ANALYSIS ERROR: $e');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
+  Widget _buildErrorRetryCard() {
+    return Center(
+      child: RepaintBoundary(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: const Color(0xFFD4AF37).withOpacity(0.5),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFD4AF37).withOpacity(0.1),
+                blurRadius: 40,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4AF37).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.wb_sunny_outlined,
+                  color: Color(0xFFD4AF37),
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                "SYSTEM WARM-UP REQUIRED",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFFD4AF37),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "The forensic engine is waking up. Please click below to re-submit your request.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _handleAnalysis,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4AF37),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    "RE-VERIFY CLAIM",
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _animateMigration() async {
+    final bool isMobile = MediaQuery.of(context).size.width <= 900;
+    final List<SourceAttachment> attachments = List.from(_pendingAttachments);
+    final List<OverlayEntry> entries = [];
+
+    // Find target (Sidebar or Tab Icon) position
+    final RenderObject? targetObject = isMobile
+        ? _sourcesTabKey.currentContext?.findRenderObject()
+        : _sidebarKey.currentContext?.findRenderObject();
+
+    if (targetObject == null) return;
+    final RenderBox targetBox = targetObject as RenderBox;
+    final Offset targetOffset = targetBox.localToGlobal(Offset.zero) +
+        (isMobile ? const Offset(12, 12) : const Offset(150, 40));
+
+    for (final attachment in attachments) {
+      final key = _chipKeys[attachment.id];
+      if (key == null) continue;
+
+      final RenderBox? chipBox =
+          key.currentContext?.findRenderObject() as RenderBox?;
+      if (chipBox == null) continue;
+
+      final Offset startOffset = chipBox.localToGlobal(Offset.zero);
+      final Size blockSize = chipBox.size;
+
+      final entry = OverlayEntry(builder: (context) {
+        return _FlyingAttachment(
+          startOffset: startOffset,
+          endOffset: targetOffset,
+          size: blockSize,
+          attachment: attachment,
+        );
+      });
+      entries.add(entry);
+      Overlay.of(context).insert(entry);
+    }
+
+    await Future.delayed(const Duration(milliseconds: 1000));
+
+    for (final entry in entries) {
+      entry.remove();
+    }
+  }
+
+  void _handleSupportSelected(GroundingSupport? support) {
+    setState(() {
+      if (_activeSupport == support) {
+        _activeSupport = null;
+        _activeCitationIndices = [];
+      } else {
+        _activeSupport = support;
+        _activeCitationIndices = support?.groundingChunkIndices ?? [];
+        if (!_isSidebarExpanded) _isSidebarExpanded = true;
+      }
+    });
+
+    if (_result != null &&
+        _activeCitationIndices.isNotEmpty &&
+        _sidebarScrollController.hasClients) {
+      final firstIndex = _activeCitationIndices.first;
+      _sidebarScrollController.animateTo(
+        firstIndex * 110.0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _handleCitationSelected(int index) {
+    setState(() {
+      _activeCitationIndices = [index];
+      _activeSupport = null;
+    });
+  }
+
+  void _toggleSidebar() {
+    setState(() {
+      _isSidebarExpanded = !_isSidebarExpanded;
+    });
+  }
+
+  // ===========================================================================
+  //  UI BRANCHING
+  // ===========================================================================
+
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth > 900) {
+          return _buildDesktopLayout();
+        } else {
+          return _buildMobileLayout();
+        }
+      },
+    );
+  }
+
+  // --- DESKTOP LAYOUT (3-Pane) ---
+  Widget _buildDesktopLayout() {
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Sidebar (Mock)
+          // Nav Rail
           Container(
             width: 80,
             color: Colors.black,
-            child: Column(
+            child: const Column(
               children: [
                 SizedBox(height: 30),
                 Icon(Icons.shield_outlined, color: Color(0xFFD4AF37), size: 40),
                 SizedBox(height: 40),
-                _SidebarItem(icon: Icons.dashboard, isActive: true),
-                _SidebarItem(icon: Icons.history, isActive: false),
-                _SidebarItem(icon: Icons.settings, isActive: false),
+                _SidebarIcons(icon: Icons.dashboard, isActive: true),
+                _SidebarIcons(icon: Icons.history, isActive: false),
+                _SidebarIcons(icon: Icons.settings, isActive: false),
               ],
             ),
           ),
-
-          // Main Content
+          // Sidebar
+          Flexible(
+            flex: 0,
+            child: SourceSidebarContainer(
+              key: _sidebarKey,
+              isExpanded: _isSidebarExpanded,
+              onToggle: _toggleSidebar,
+              citations: _result?.groundingCitations ?? [],
+              uploadedAttachments: _migratedAttachments,
+              activeIndices: _activeCitationIndices,
+              onCitationSelected: _handleCitationSelected,
+              onDeleteAttachment: _handleDeleteMigratedAttachment,
+              scrollController: _sidebarScrollController,
+            ),
+          ),
+          // Analysis Hub
           Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(24.0),
+            flex: 5,
+            child: Container(
+              color: const Color(0xFF121212),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'VERISCAN DASHBOARD',
-                            style: GoogleFonts.outfit(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2.0,
-                            ),
-                          ),
-                          Text(
-                            'Multimodal Forensic Analysis Engine',
-                            style: GoogleFonts.outfit(
-                              color: Colors.white38,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                      _StatusBadge(),
-                    ],
-                  ),
-
-                  SizedBox(height: 30),
-
-                  // Bento Grid
+                  // Analysis Content
                   Expanded(
-                    child: SingleChildScrollView(
-                      child: StaggeredGrid.count(
-                        crossAxisCount: 4,
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        children: [
-                          // 1. Input Zone (Takes 2 Columns)
-                          StaggeredGridTile.count(
-                            crossAxisCellCount: 2,
-                            mainAxisCellCount: 2,
-                            child: _BentoCard(
-                              title: "INPUT DATA",
-                              child: InputSection(
-                                onAnalyze: _handleAnalysis,
-                                isLoading: _isLoading,
-                              ),
-                            ),
-                          ),
-
-                          // 2. Confidence Gauge (Takes 1 Column)
-                          StaggeredGridTile.count(
-                            crossAxisCellCount: 1,
-                            mainAxisCellCount: 1,
-                            child: _BentoCard(
-                              title: "VERACITY SCORE",
-                              child: _result == null
-                                  ? Center(
-                                      child: Text("Waiting for analysis...",
-                                          style:
-                                              TextStyle(color: Colors.white24)))
-                                  : ConfidenceGauge(
-                                      score: _result!.confidenceScore),
-                            ),
-                          ),
-
-                          // 3. Verdict/Summary (UPDATED)
-                          StaggeredGridTile.count(
-                            crossAxisCellCount: 1,
-                            mainAxisCellCount: 1,
-                            child: _BentoCard(
-                              title: "VERDICT",
-                              child: _result == null
-                                  ? Center(
-                                      child: Text("--",
-                                          style: TextStyle(
-                                              color: Colors.white24,
-                                              fontSize: 40)))
-                                  : Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          // ✅ FIX: Use the actual verdict string
-                                          _result!.verdict.toUpperCase(), 
-                                          style: GoogleFonts.outfit(
-                                            // ✅ FIX: Use the helper color function
-                                            color: _getStatusColor(_result!.verdict),
-                                            fontSize: _result!.verdict.length > 8 ? 24 : 32, // Auto-shrink for long words
-                                            fontWeight: FontWeight.bold,
+                    child: GestureDetector(
+                      onTap: () {
+                        if (_activeSupport != null) {
+                          setState(() {
+                            _activeSupport = null;
+                            _activeCitationIndices = [];
+                          });
+                        }
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(32, 24, 32, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("FORENSIC ANALYSIS",
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFFD4AF37),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2.0,
+                                )),
+                            const SizedBox(height: 16),
+                            Expanded(
+                              child: _hasError
+                                  ? _buildErrorRetryCard()
+                                  : (_result == null
+                                      ? _buildForensicHubGrid()
+                                      : SingleChildScrollView(
+                                          child: VeriscanInteractiveText(
+                                            analysisText: _result!.analysis,
+                                            groundingSupports:
+                                                _result!.groundingSupports,
+                                            groundingCitations:
+                                                _result!.groundingCitations,
+                                            attachments: _migratedAttachments,
+                                            activeSupport: _activeSupport,
+                                            onSupportSelected:
+                                                _handleSupportSelected,
                                           ),
-                                        ),
-                                        if (_result!.keyFindings.isNotEmpty)
-                                          Padding(
-                                            padding: EdgeInsets.only(top: 8.0),
-                                            child: Text(
-                                              _result!.keyFindings.first,
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                  color: Colors.white54,
-                                                  fontSize: 12),
-                                              maxLines: 3,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
+                                        )),
                             ),
-                          ),
-
-                          // 4. Analysis Text (Takes 2 Columns, below Gauge/Verdict)
-                          StaggeredGridTile.count(
-                            crossAxisCellCount: 2,
-                            mainAxisCellCount: 1, // Adjusted height
-                            child: _BentoCard(
-                              title: "FORENSIC ANALYSIS",
-                              child: _result == null
-                                  ? Center(
-                                      child: Icon(Icons.analytics_outlined,
-                                          color: Colors.white12, size: 40))
-                                  : SingleChildScrollView(
-                                      child: Text(
-                                        _result!.analysis,
-                                        style: GoogleFonts.outfit(
-                                            color: Colors.white70, height: 1.5),
-                                      ),
-                                    ),
-                            ),
-                          ),
-
-                          // 5. Evidence (Takes 2 Columns, 2 Rows - Side Panel logic usually, but here stacked)
-                          StaggeredGridTile.count(
-                            crossAxisCellCount: 4,
-                            mainAxisCellCount: 2,
-                            child: _BentoCard(
-                              title: "GROUNDING EVIDENCE",
-                              child: _result == null
-                                  ? Center(
-                                      child: Text("No evidence loaded.",
-                                          style:
-                                              TextStyle(color: Colors.white24)))
-                                  : ListView.builder(
-                                      itemCount:
-                                          _result!.groundingCitations.length,
-                                      itemBuilder: (context, index) {
-                                        final citation =
-                                            _result!.groundingCitations[index];
-                                        return EvidenceCard(
-                                          title: citation['title'] ?? 'Source',
-                                          snippet: citation['snippet'] ?? '',
-                                          url: citation['url'] ?? '',
-                                        );
-                                      },
-                                    ),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                    ),
+                  ),
+                  // Action Bar
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: GlassActionBar(
+                      controller: _inputController,
+                      onAnalyze: _handleAnalysis,
+                      attachments: _pendingAttachments,
+                      chipKeys: _chipKeys,
+                      onAddAttachment: _handleAddAttachment,
+                      onRemoveAttachment: _handleRemoveAttachment,
+                      isLoading: _isLoading,
                     ),
                   ),
                 ],
               ),
             ),
           ),
+          // Verdict Pane
+          Expanded(
+            flex: 3,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                border: Border(
+                  left: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+                ),
+              ),
+              child: VerdictPane(result: _result),
+            ),
+          ),
         ],
       ),
     );
   }
-}
 
-class _BentoCard extends StatelessWidget {
-  final String title;
-  final Widget child;
+  // --- MOBILE LAYOUT (Tabbed) ---
+  Widget _buildMobileLayout() {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Column(
+        children: [
+          // Main Scrollable Content
+          Expanded(
+            child: IndexedStack(
+              index: _mobileSelectedIndex,
+              children: [
+                _buildMobileReportView(),
+                _buildMobileSourcesView(),
+              ],
+            ),
+          ),
 
-  const _BentoCard({required this.title, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            child: GlassActionBar(
+              controller: _inputController,
+              onAnalyze: _handleAnalysis,
+              attachments: _pendingAttachments,
+              chipKeys: _chipKeys,
+              onAddAttachment: _handleAddAttachment,
+              onRemoveAttachment: _handleRemoveAttachment,
+              isLoading: _isLoading,
+            ),
           ),
         ],
       ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+              top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+        ),
+        child: BottomNavigationBar(
+          onTap: (index) => setState(() => _mobileSelectedIndex = index),
+          backgroundColor: Colors.black,
+          selectedItemColor: const Color(0xFFD4AF37),
+          unselectedItemColor: Colors.white24,
+          currentIndex: _mobileSelectedIndex,
+          selectedLabelStyle:
+              GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold),
+          unselectedLabelStyle: GoogleFonts.outfit(fontSize: 12),
+          items: [
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.analytics_outlined),
+              label: 'Report',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.library_books_outlined, key: _sourcesTabKey),
+              label: 'Sources',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileReportView() {
+    return CustomScrollView(
+      slivers: [
+        // Sticky Header Row - Always visible with placeholders
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: MobileStickyHeaderDelegate(result: _result),
+        ),
+
+        if (_hasError)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 160),
+              child: _buildErrorRetryCard(),
+            ),
+          )
+        else if (_result == null)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 160),
+              child: _buildForensicHubGrid(),
+            ),
+          )
+        else ...[
+          // Forensic Analysis Section
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+            sliver: SliverToBoxAdapter(
+              child: GestureDetector(
+                onTap: () {
+                  if (_activeSupport != null) {
+                    setState(() {
+                      _activeSupport = null;
+                      _activeCitationIndices = [];
+                    });
+                  }
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.02),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("FORENSIC ANALYSIS",
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFFD4AF37),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          )),
+                      const SizedBox(height: 16),
+                      VeriscanInteractiveText(
+                        analysisText: _result!.analysis,
+                        groundingSupports: _result!.groundingSupports,
+                        groundingCitations: _result!.groundingCitations,
+                        attachments: _migratedAttachments,
+                        activeSupport: _activeSupport,
+                        onSupportSelected: _handleSupportSelected,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+
+        // Key Findings Section (If available)
+        if (_result != null && _result!.keyFindings.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 160),
+            sliver: SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.02),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                    width: 0.5,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("KEY FINDINGS",
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFFD4AF37),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                        )),
+                    const SizedBox(height: 12),
+                    ..._result!.keyFindings.map((finding) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(top: 4),
+                                child: Icon(Icons.check_circle_outline,
+                                    size: 14, color: Color(0xFFD4AF37)),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  finding,
+                                  style: GoogleFonts.outfit(
+                                      color: const Color(0xFFE0E0E0),
+                                      fontSize: 14),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildForensicHubGrid() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.02),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: const Color(0xFFD4AF37).withValues(alpha: 0.1),
+          width: 0.5,
+        ),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
+          Icon(Icons.biotech_outlined,
+              size: 48, color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+          const SizedBox(height: 16),
           Text(
-            title,
+            "Awaiting Forensic Ingestion...",
+            style: GoogleFonts.outfit(
+              color: const Color(0xFFE0E0E0),
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            "CAPABILITIES",
             style: GoogleFonts.outfit(
               color: const Color(0xFFD4AF37),
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
+              letterSpacing: 1.5,
             ),
           ),
           const SizedBox(height: 16),
-          Expanded(child: child),
+          // Capabilities Grid Section
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  _buildCapabilityItem(Icons.verified_user_outlined, "Claims"),
+                  const SizedBox(width: 12),
+                  _buildCapabilityItem(Icons.image_search, "Media"),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _buildCapabilityItem(Icons.find_in_page_outlined, "Sources"),
+                  const SizedBox(width: 12),
+                  _buildCapabilityItem(Icons.history_edu, "Archives"),
+                ],
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCapabilityItem(IconData icon, String label) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: const Color(0xFFD4AF37), size: 24),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileSourcesView() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 40),
+      child: MobileSourceLibrary(
+        citations: _result?.groundingCitations ?? [],
+        uploadedAttachments: _migratedAttachments,
+        onCitationSelected: _handleCitationSelected,
+        onDeleteAttachment: _handleDeleteMigratedAttachment,
       ),
     );
   }
 }
 
-class _SidebarItem extends StatelessWidget {
+class _SidebarIcons extends StatelessWidget {
   final IconData icon;
   final bool isActive;
-
-  const _SidebarItem({required this.icon, required this.isActive});
-
+  const _SidebarIcons({required this.icon, required this.isActive});
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isActive
-            ? const Color(0xFFD4AF37).withValues(alpha: 0.1)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: isActive
-            ? Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5))
-            : null,
-      ),
       child: Icon(
         icon,
         color: isActive ? const Color(0xFFD4AF37) : Colors.white24,
@@ -337,30 +738,79 @@ class _SidebarItem extends StatelessWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
+class _FlyingAttachment extends StatelessWidget {
+  final Offset startOffset;
+  final Offset endOffset;
+  final Size size;
+  final SourceAttachment attachment;
+
+  const _FlyingAttachment({
+    required this.startOffset,
+    required this.endOffset,
+    required this.size,
+    required this.attachment,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E3A23),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF4CAF50)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.circle, size: 8, color: Color(0xFF4CAF50)),
-          const SizedBox(width: 8),
-          Text(
-            'SYSTEM ONLINE',
-            style: GoogleFonts.outfit(
-              color: const Color(0xFF4CAF50),
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
+    return TweenAnimationBuilder<Offset>(
+      tween: Tween<Offset>(begin: startOffset, end: endOffset),
+      duration: const Duration(milliseconds: 1000),
+      curve: Curves.easeInOutCubic,
+      builder: (context, Offset offset, Widget? child) {
+        return Positioned(
+          left: offset.dx,
+          top: offset.dy,
+          child: Material(
+            color: Colors.transparent,
+            child: Opacity(
+              opacity: 1.0 -
+                  (offset.dx - startOffset.dx).abs() /
+                      (endOffset.dx - startOffset.dx)
+                          .abs()
+                          .clamp(1.0, 99999.0)
+                          .toDouble() *
+                      0.5,
+              child: Container(
+                width: size.width,
+                height: size.height,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                      blurRadius: 10,
+                    )
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.auto_awesome,
+                        color: Colors.black, size: 16),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        attachment.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                          color: Colors.black,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

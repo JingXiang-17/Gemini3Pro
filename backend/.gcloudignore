@@ -1,0 +1,10 @@
+# Standard ignore patterns
+.gcloudignore
+.git
+.gitignore
+node_modules
+venv
+__pycache__
+
+# Explicitly UN-IGNORE the service account key for production
+!service-account.json

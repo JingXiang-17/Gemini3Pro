@@ -1,0 +1,31 @@
+{
+    "functions": [
+        {
+            "source": "backend",
+            "codebase": "default",
+            "ignore": [
+                "venv",
+                ".git",
+                "__pycache__",
+                "*.pyc",
+                ".env"
+            ],
+            "runtime": "python311",
+            "predeploy": []
+        }
+    ],
+    "hosting": {
+        "public": "frontend/build/web",
+        "ignore": [
+            "firebase.json",
+            "**/.*",
+            "**/node_modules/**"
+        ],
+        "rewrites": [
+            {
+                "source": "/analyze",
+                "function": "analyze"
+            }
+        ]
+    }
+}

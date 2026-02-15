@@ -15,12 +15,11 @@ void main() {
     await tester.pumpWidget(const VeriScanApp());
 
     // Verify that the title is present.
-    expect(find.text('VeriScan AI'), findsOneWidget);
+    // Verify that the title is present (Dashboard header or Sidebar item).
+    // Or just check for key elements.
+    expect(find.text('FORENSIC ANALYSIS'), findsOneWidget);
 
-    // Verify that the helper text is present.
-    expect(find.text('Verify the truth with Gemini AI'), findsOneWidget);
-
-    // Verify that the button is present.
-    expect(find.text('Verify Claim'), findsOneWidget);
+    // Verify input hint or analyze button.
+    expect(find.text('ANALYZE'), findsOneWidget);
   });
 }

@@ -47,40 +47,44 @@ class _ConfidenceGaugeState extends State<ConfidenceGauge>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: _GaugePainter(_animation.value),
-          child: SizedBox(
-            width: 200,
-            height: 200,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'TRUST SCORE',
-                    style: GoogleFonts.outfit(
-                      color: Colors.white54,
-                      fontSize: 12,
-                      letterSpacing: 1.5,
+    return FittedBox(
+      fit: BoxFit.contain,
+      child: SizedBox(
+        width: 200,
+        height: 200,
+        child: AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            return CustomPaint(
+              painter: _GaugePainter(_animation.value),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'TRUST SCORE',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white54,
+                        fontSize: 12,
+                        letterSpacing: 1.5,
+                      ),
                     ),
-                  ),
-                  Text(
-                    '${(_animation.value * 100).toInt()}%',
-                    style: GoogleFonts.outfit(
-                      color: const Color(0xFFD4AF37),
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
+                    Text(
+                      '${(_animation.value * 100).toInt()}%',
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFFD4AF37),
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 }

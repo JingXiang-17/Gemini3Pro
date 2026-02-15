@@ -5,3 +5,7 @@ google-cloud-aiplatform
 google-auth
 python-multipart
 pydantic
+firebase-functions
+firebase-admin
+functions-framework
+httpx
