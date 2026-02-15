@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/grounding_models.dart';
@@ -62,7 +63,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     });
   }
 
-  Future<void> _handleAnalysis() async {
+  Future<void> _handleAnalysis({bool isRetry = false}) async {
     final text = _inputController.text.trim();
     if (text.isEmpty &&
         _pendingAttachments.isEmpty &&
@@ -101,6 +102,27 @@ class _DashboardScreenState extends State<DashboardScreen>
       }
     } catch (e) {
       debugPrint('ANALYSIS ERROR: $e');
+      
+      // Auto-retry once if it's the first attempt and it's a timeout/cold-start error
+      if (!isRetry && mounted) {
+        // Only retry for timeout errors or cold start indicators
+        final errorString = e.toString().toLowerCase();
+        final isRetryableError = e is TimeoutException || 
+                                  errorString.contains('timeout') ||
+                                  errorString.contains('warm') ||
+                                  errorString.contains('cold start');
+        
+        if (isRetryableError) {
+          debugPrint('Retrying after cold start...');
+          await Future.delayed(const Duration(seconds: 2));
+          
+          // Check mounted again after delay
+          if (mounted) {
+            return _handleAnalysis(isRetry: true);
+          }
+        }
+      }
+      
       if (mounted) {
         setState(() {
           _hasError = true;
