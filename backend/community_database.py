@@ -10,13 +10,29 @@ logger = logging.getLogger(__name__)
 class CommunityDatabase:
     def __init__(self, db_path: str = "community.db"):
         self.db_path = db_path
+        self._connection = None
+        # For in-memory databases, we need to keep connection alive
+        self._is_memory = (db_path == ':memory:')
         self.init_database()
     
     def get_connection(self):
         """Get a database connection."""
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+        if self._is_memory:
+            # For in-memory databases, reuse the same connection
+            if self._connection is None:
+                self._connection = sqlite3.connect(self.db_path)
+                self._connection.row_factory = sqlite3.Row
+            return self._connection
+        else:
+            # For file-based databases, create new connections
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            return conn
+    
+    def _close_connection(self, conn):
+        """Close connection if not using in-memory database."""
+        if not self._is_memory:
+            self._close_connection(conn)
     
     def init_database(self):
         """Initialize database tables."""
@@ -59,7 +75,8 @@ class CommunityDatabase:
         """)
         
         conn.commit()
-        conn.close()
+        if not self._is_memory:
+            self._close_connection(conn)
         logger.info("Community database initialized successfully")
     
     def generate_claim_id(self, claim_text: str) -> str:
@@ -83,7 +100,7 @@ class CommunityDatabase:
         except sqlite3.IntegrityError:
             logger.info(f"Claim already exists: {claim_id}")
         finally:
-            conn.close()
+            self._close_connection(conn)
         
         return claim_id
     
@@ -97,7 +114,7 @@ class CommunityDatabase:
         """, (claim_id,))
         
         row = cursor.fetchone()
-        conn.close()
+        self._close_connection(conn)
         
         if row:
             return dict(row)
@@ -138,7 +155,7 @@ class CommunityDatabase:
             logger.warning(f"User {user_id} already voted on claim {claim_id}")
             return False
         finally:
-            conn.close()
+            self._close_connection(conn)
     
     def calculate_user_reputation(self, user_id: str) -> float:
         """
@@ -157,7 +174,7 @@ class CommunityDatabase:
         """, (user_id,))
         
         votes = cursor.fetchall()
-        conn.close()
+        self._close_connection(conn)
         
         if not votes:
             return 0.0
@@ -215,7 +232,7 @@ class CommunityDatabase:
         """, (user_id, total_votes, accurate_votes, reputation, datetime.now()))
         
         conn.commit()
-        conn.close()
+        self._close_connection(conn)
     
     def calculate_weighted_trust_score(self, claim_id: str) -> Tuple[float, int]:
         """
@@ -235,7 +252,7 @@ class CommunityDatabase:
         """, (claim_id,))
         
         votes = cursor.fetchall()
-        conn.close()
+        self._close_connection(conn)
         
         if not votes:
             return 0.0, 0
@@ -268,7 +285,7 @@ class CommunityDatabase:
         """, (limit,))
         
         rows = cursor.fetchall()
-        conn.close()
+        self._close_connection(conn)
         
         claims = []
         for row in rows:
@@ -292,7 +309,7 @@ class CommunityDatabase:
         """, (f"%{query}%",))
         
         rows = cursor.fetchall()
-        conn.close()
+        self._close_connection(conn)
         
         claims = []
         for row in rows:
@@ -314,7 +331,7 @@ class CommunityDatabase:
         """, (user_id,))
         
         row = cursor.fetchone()
-        conn.close()
+        self._close_connection(conn)
         
         if row:
             return dict(row)
