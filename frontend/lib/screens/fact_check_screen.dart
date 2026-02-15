@@ -17,6 +17,16 @@ class _FactCheckScreenState extends State<FactCheckScreen> {
   AnalysisResponse? _result;
   bool _isLoading = false;
 
+  Color _getStatusColor(String verdict) {
+    switch (verdict.toUpperCase()) {
+      case 'REAL': return const Color(0xFFD4AF37); // Gold/Green
+      case 'FAKE': return Colors.redAccent;
+      case 'MISLEADING': return Colors.orangeAccent;
+      case 'UNVERIFIED': return Colors.amber;
+      default: return Colors.grey;
+    }
+  }
+
   Future<void> _handleVerify() async {
     if (_controller.text.isEmpty) return;
 
@@ -131,13 +141,13 @@ class _FactCheckScreenState extends State<FactCheckScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: Colors.white.withOpacity(0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accentColor.withValues(alpha: 0.3), width: 1),
-        boxShadow: isReal
+        border: Border.all(color: accentColor.withOpacity(0.3), width: 1),
+        boxShadow: _result!.verdict == 'REAL' // Only glow if Real? Or glow for all?
             ? [
                 BoxShadow(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.1),
+                  color: accentColor.withOpacity(0.1),
                   blurRadius: 20,
                   spreadRadius: 5,
                 )
@@ -152,7 +162,8 @@ class _FactCheckScreenState extends State<FactCheckScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isReal ? 'VERIFIED REAL' : 'POTENTIAL MISINFORMATION',
+                // ✅ FIX: Show actual verdict
+                _result!.verdict.toUpperCase(),
                 style: GoogleFonts.outfit(
                   color: accentColor,
                   fontWeight: FontWeight.bold,
@@ -164,17 +175,23 @@ class _FactCheckScreenState extends State<FactCheckScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.1),
+                  color: accentColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${(_result!.confidenceScore * 100).toInt()}% Confidence',
+                  // Handle 0% confidence for Unverified nicely
+                  _result!.verdict == 'UNVERIFIED' 
+                      ? 'Op-Ed / N/A' 
+                      : '${(_result!.confidenceScore * 100).toInt()}% Confidence',
                   style: TextStyle(color: accentColor, fontSize: 12),
                 ),
               ),
             ],
           ),
+
           const SizedBox(height: 16),
+
+          // --- ANALYSIS SECTION ---
           Text(
             'Analysis',
             style: GoogleFonts.outfit(
@@ -195,6 +212,8 @@ class _FactCheckScreenState extends State<FactCheckScreen> {
           // ----------------------------------
 
           const SizedBox(height: 20),
+
+          // --- KEY FINDINGS SECTION ---
           Text(
             'Key Findings',
             style: GoogleFonts.outfit(
@@ -204,6 +223,8 @@ class _FactCheckScreenState extends State<FactCheckScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          
+          // Map the list of findings to widgets
           ..._result!.keyFindings.map((finding) => Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: Row(
