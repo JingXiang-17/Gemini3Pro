@@ -62,7 +62,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     });
   }
 
-  Future<void> _handleAnalysis() async {
+  Future<void> _handleAnalysis({bool isRetry = false}) async {
     final text = _inputController.text.trim();
     if (text.isEmpty &&
         _pendingAttachments.isEmpty &&
@@ -101,6 +101,14 @@ class _DashboardScreenState extends State<DashboardScreen>
       }
     } catch (e) {
       debugPrint('ANALYSIS ERROR: $e');
+      
+      // Auto-retry once if it's the first attempt
+      if (!isRetry && mounted) {
+        debugPrint('Retrying after cold start...');
+        await Future.delayed(const Duration(seconds: 2));
+        return _handleAnalysis(isRetry: true);
+      }
+      
       if (mounted) {
         setState(() {
           _hasError = true;
