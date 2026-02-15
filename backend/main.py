@@ -25,6 +25,9 @@ import firebase_admin
 # Import models
 from models import AnalysisRequest, AnalysisResponse, GroundingCitation, GroundingSupport
 
+# Import community routes
+from community_routes import router as community_router
+
 # --- Initialization ---
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -35,6 +38,9 @@ if not firebase_admin._apps:
 
 app = FastAPI(title="VeriScan Core Engine")
 _grounding_service = None
+
+# Register community routes
+app.include_router(community_router)
 
 def get_grounding_service():
     global _grounding_service

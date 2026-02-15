@@ -39,3 +39,7 @@ Thumbs.db
 deploy_log.txt
 firebase-debug.log
 tests/assets/
+
+# Community Database (runtime files only)
+community.db
+backend/community.db
