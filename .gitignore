@@ -40,7 +40,6 @@ deploy_log.txt
 firebase-debug.log
 tests/assets/
 
-# Community Database
+# Community Database (runtime files only)
 community.db
 backend/community.db
-backend/test_community.py

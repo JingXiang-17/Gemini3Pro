@@ -32,7 +32,7 @@ class CommunityDatabase:
     def _close_connection(self, conn):
         """Close connection if not using in-memory database."""
         if not self._is_memory:
-            self._close_connection(conn)
+            conn.close()
     
     def init_database(self):
         """Initialize database tables."""
