@@ -8,6 +8,8 @@ import '../widgets/verdict_pane.dart';
 import '../widgets/veriscan_interactive_text.dart';
 import '../widgets/mobile/mobile_sticky_header.dart';
 import '../widgets/mobile/mobile_source_library.dart';
+import '../widgets/veriscan_drawer.dart';
+import '../widgets/global_menu_button.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -284,26 +286,53 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // ===========================================================================
-  //  UI BRANCHING
+  //  UI BRANCHING (UPDATED FOR GLOBAL MENU BUTTON)
   // ===========================================================================
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth > 900) {
-          return _buildDesktopLayout();
-        } else {
-          return _buildMobileLayout();
-        }
-      },
+    // 1. Wrap in Scaffold to host the Drawer
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      drawer: const VeriscanDrawer(), // The Drawer lives here now
+      body: Stack(
+        children: [
+          // 2. Main Content (Padded so button doesn't cover top-left content)
+          Padding(
+            padding: const EdgeInsets.only(top: 60.0),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth > 900) {
+                  return _buildDesktopLayout();
+                } else {
+                  return _buildMobileLayout();
+                }
+              },
+            ),
+          ),
+
+          // 3. The Global Button (Floats on top of everything)
+          Positioned(
+            top: 0,
+            left: 0,
+            child: Builder(
+              // Builder needed to find the Scaffold above
+              builder: (innerContext) => GlobalMenuButton(
+                onTap: () => Scaffold.of(innerContext).openDrawer(),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  // --- DESKTOP LAYOUT (3-Pane) ---
+  // --- DESKTOP LAYOUT (Removed AppBar & Drawer) ---
   Widget _buildDesktopLayout() {
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
+      // NO AppBar here (handled by parent Stack)
+      // NO Drawer here (handled by parent Scaffold)
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -417,7 +446,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               decoration: BoxDecoration(
                 color: const Color(0xFF1E1E1E),
                 border: Border(
-                  left: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+                  left:
+                      BorderSide(color: Colors.white.withValues(alpha: 0.05)),
                 ),
               ),
               child: VerdictPane(result: _result),
@@ -428,7 +458,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // --- MOBILE LAYOUT (Tabbed) ---
+  // --- MOBILE LAYOUT (Unchanged logic, just structure) ---
   Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: Colors.black,
@@ -673,7 +703,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(height: 12),
               Row(
                 children: [
-                  _buildCapabilityItem(Icons.find_in_page_outlined, "Sources"),
+                  _buildCapabilityItem(
+                      Icons.find_in_page_outlined, "Sources"),
                   const SizedBox(width: 12),
                   _buildCapabilityItem(Icons.history_edu, "Archives"),
                 ],
