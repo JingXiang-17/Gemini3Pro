@@ -10,6 +10,9 @@ import '../widgets/mobile/mobile_sticky_header.dart';
 import '../widgets/mobile/mobile_source_library.dart';
 import '../widgets/veriscan_drawer.dart';
 import '../widgets/global_menu_button.dart';
+import '../widgets/juicy_button.dart';
+import 'dart:async';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -31,6 +34,45 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool _hasError = false;
   bool _isSidebarExpanded = true;
   int _mobileSelectedIndex = 0;
+
+  late StreamSubscription _intentDataStreamSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 1. Listen to shared text WHILE THE APP IS OPEN
+    _intentDataStreamSubscription = ReceiveSharingIntent.instance.getMediaStream().listen((value) {
+      if (value.isNotEmpty) {
+        _handleSharedText(value.first.path);
+      }
+    }, onError: (err) {
+      debugPrint("Shared Intent Error: $err");
+    });
+
+    // 2. Get the shared text if the app was CLOSED (Cold Start)
+    ReceiveSharingIntent.instance.getInitialMedia().then((value) {
+      if (value.isNotEmpty) {
+        _handleSharedText(value.first.path);
+      }
+    });
+  }
+
+  void _handleSharedText(String text) {
+    setState(() {
+      _inputController.text = text;
+    });
+    // Optional: Automatically trigger analysis when shared
+    _handleAnalysis(); 
+  }
+
+  @override
+  void dispose() {
+    _intentDataStreamSubscription.cancel(); // Critical to prevent memory leaks
+    _inputController.dispose();
+    _sidebarScrollController.dispose();
+    super.dispose();
+  }
 
   // Attachments State
   final List<SourceAttachment> _pendingAttachments = [];
@@ -177,25 +219,25 @@ class _DashboardScreenState extends State<DashboardScreen>
               SizedBox(
                 width: double.infinity,
                 height: 50,
-                child: ElevatedButton(
-                  onPressed: _handleAnalysis,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD4AF37),
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
+                child: JuicyButton(
+                  onTap: _handleAnalysis,
+                  child: Container( // Changed ElevatedButton to a Container to hold the style
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4AF37),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    "RE-VERIFY CLAIM",
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
+                    child: Text(
+                      "RE-VERIFY CLAIM",
+                      style: GoogleFonts.outfit(
+                        color: Colors.black, // Make sure text stays black
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                      ),
                     ),
                   ),
                 ),
-              ),
+              )
             ],
           ),
         ),

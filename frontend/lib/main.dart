@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/dashboard_screen.dart'; 
 import 'screens/dashboard_landing_view.dart'; 
+import 'screens/splash_screen.dart';
 
 void main() {
   runApp(const VeriScanApp());
@@ -41,7 +42,7 @@ class VeriScanApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LandingWrapper(), 
+      home: const SplashScreen(), 
     );
   }
 }

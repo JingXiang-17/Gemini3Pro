@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/veriscan_drawer.dart';
 import '../widgets/global_menu_button.dart';
+import '../widgets/juicy_button.dart';
 
 class DashboardLandingView extends StatefulWidget {
   final VoidCallback onStartAnalysis;
@@ -37,8 +38,8 @@ class _DashboardLandingViewState extends State<DashboardLandingView> {
             floating: false,
             delegate: _LandingHeaderDelegate(
               onOpenMenu: () => _scaffoldKey.currentState?.openDrawer(),
-              minHeight: 90.0,  // Compact when scrolled
-              maxHeight: 250.0, // Tall when at the top
+              minHeight: 140.0,  // Compact when scrolled
+              maxHeight: 200.0, // Tall when at the top
             ),
           ),
 
@@ -108,37 +109,44 @@ class _DashboardLandingViewState extends State<DashboardLandingView> {
   // --- WIDGET HELPERS ---
 
   Widget _buildStartButton() {
-    // 3. FIXED BUTTON: Uses constrained box and Flexible to prevent overflow
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 180, maxWidth: 300, minHeight: 50),
-      child: ElevatedButton(
-        onPressed: widget.onStartAnalysis,
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-          backgroundColor: const Color(0xFFD4AF37),
-          foregroundColor: Colors.black,
-          elevation: 10,
-          shadowColor: const Color(0xFFD4AF37).withOpacity(0.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.radar),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                "START NEW ANALYSIS",
-                style: GoogleFonts.outfit(
-                  fontSize: 14, 
-                  fontWeight: FontWeight.bold, 
-                  letterSpacing: 1.0
+    // 1. WE WRAP IT IN THE NEW JUICYBUTTON
+    return JuicyButton(
+      // 2. We move the action up here so the 200ms delay works
+      onTap: widget.onStartAnalysis, 
+      
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 180, maxWidth: 300, minHeight: 60),
+        child: ElevatedButton(
+          // 3. We leave this empty. JuicyButton handles the click now!
+          // (If we make it null, Flutter turns the button grey, so we use () {})
+          onPressed: () {}, 
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            backgroundColor: const Color(0xFFD4AF37),
+            foregroundColor: Colors.black,
+            elevation: 10,
+            shadowColor: const Color(0xFFD4AF37).withOpacity(0.5),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.radar),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  "START NEW ANALYSIS",
+                  style: GoogleFonts.outfit(
+                    fontSize: 14, 
+                    fontWeight: FontWeight.bold, 
+                    letterSpacing: 1.0
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -294,10 +302,10 @@ class _LandingHeaderDelegate extends SliverPersistentHeaderDelegate {
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     final double progress = min(1.0, shrinkOffset / (maxHeight - minHeight));
 
-    final double logoSize = lerpDouble(80, 36, progress)!;
-    final double titleSize = lerpDouble(24, 14, progress)!;
-    final double sloganSize = lerpDouble(16, 10, progress)!;
-    final double topPadding = lerpDouble(20, 35, progress)!;
+    final double logoSize = lerpDouble(80, 45, progress)!;
+    final double titleSize = lerpDouble(19, 17, progress)!;
+    final double sloganSize = lerpDouble(14, 13, progress)!;
+    final double topPadding = lerpDouble(20, 50, progress)!;
 
     return Container(
       decoration: const BoxDecoration(
@@ -321,72 +329,88 @@ class _LandingHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // B. THE CENTERED CONTENT
+        // B. THE CENTERED CONTENT
           Center(
             child: Padding(
-              // FIX: Added left/right padding so it doesn't hit the menu button or screen edge
               padding: EdgeInsets.only(top: topPadding, left: 60, right: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: logoSize,
-                    height: logoSize,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFD4AF37), width: 1.5),
-                      boxShadow: [
-                         BoxShadow(
-                           color: const Color(0xFFD4AF37).withOpacity(0.3 * (1 - progress)), 
-                           blurRadius: 15
-                         )
-                      ]
-                    ),
-                    child: Center(
-                      child: Icon(Icons.shield, color: const Color(0xFFD4AF37), size: logoSize * 0.6),
+                  // --- HERO LANDING PAD 1: THE LOGO ---
+                  Hero(
+                    tag: 'veriscan_logo',
+                    child: Container(
+                      width: logoSize,
+                      height: logoSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFD4AF37), width: 1.5),
+                        boxShadow: [
+                           BoxShadow(
+                             color: const Color(0xFFD4AF37).withOpacity(0.3 * (1 - progress)), 
+                             blurRadius: 15
+                           )
+                        ]
+                      ),
+                      child: Center(
+                        child: Icon(Icons.shield, color: const Color(0xFFD4AF37), size: logoSize * 0.6),
+                      ),
                     ),
                   ),
                   
                   const SizedBox(width: 12),
 
-                  // FIX: Flexible prevents the text from overflowing!
                   Flexible(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "VERISCAN: FORENSIC TRUTH ENGINE",
-                          style: GoogleFonts.outfit(
-                            fontSize: titleSize,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
+                        // --- HERO LANDING PAD 2: THE TITLE ---
+                        Hero(
+                          tag: 'veriscan_title',
+                          child: Material(
+                            type: MaterialType.transparency,
+                            child: Text(
+                              "VERISCAN: FORENSIC TRUTH ENGINE",
+                              style: GoogleFonts.outfit(
+                                fontSize: titleSize,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                              maxLines: 3, 
+                              overflow: TextOverflow.visible,
+                            ),
                           ),
-                          // Allow wrapping on small screens
-                          maxLines: 2, 
-                          overflow: TextOverflow.visible,
                         ),
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: "VERIFY",
-                                style: GoogleFonts.outfit(
-                                  fontSize: sloganSize,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFFD4AF37),
-                                ),
+                        
+                        // --- HERO LANDING PAD 3: THE SLOGAN ---
+                        Hero(
+                          tag: 'veriscan_slogan',
+                          child: Material(
+                            type: MaterialType.transparency,
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: "VERIFY",
+                                    style: GoogleFonts.outfit(
+                                      fontSize: sloganSize,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFD4AF37),
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: ", before you trust anything.",
+                                    style: GoogleFonts.outfit(
+                                      fontSize: sloganSize,
+                                      fontWeight: FontWeight.w300,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              TextSpan(
-                                text: ", before you trust anything.",
-                                style: GoogleFonts.outfit(
-                                  fontSize: sloganSize,
-                                  fontWeight: FontWeight.w300,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ],

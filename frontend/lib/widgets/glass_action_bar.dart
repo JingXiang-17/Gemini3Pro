@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/grounding_models.dart';
+import '../widgets/juicy_button.dart';
 
 class GlassActionBar extends StatefulWidget {
   final TextEditingController controller;
@@ -247,9 +248,11 @@ class _GlassActionBarState extends State<GlassActionBar> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  GestureDetector(
+                  
+                  JuicyButton(
                     key: const ValueKey('analyze_button'),
-                    onTap: widget.isLoading ? null : widget.onAnalyze,
+                    // We use an empty function () {} if it's loading so it doesn't double-submit
+                    onTap: widget.isLoading ? () {} : widget.onAnalyze, 
                     child: Container(
                       width: 40,
                       height: 40,
