@@ -9,7 +9,7 @@ import '../models/grounding_models.dart';
 class FactCheckService {
   final String baseUrl = kReleaseMode
       ? 'https://analyze-r4zi2m3nfa-uc.a.run.app'
-      : 'http://127.0.0.1:8080';
+      : 'http://127.0.0.1:8000';
 
   Future<AnalysisResponse> analyzeNews({
     String? text,

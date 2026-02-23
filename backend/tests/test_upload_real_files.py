@@ -5,7 +5,7 @@ import os
 
 async def test_complex_multimodal_upload():
     # Local server URL
-    url = "http://127.0.0.1:8080/analyze"
+    url = "http://127.0.0.1:8000/analyze"
     
     # Path to real assets
     assets_dir = r"C:\Users\User\Documents\Gemini3Pro\tests\assets"
