@@ -50,12 +50,27 @@ class CommunityDatabase:
             )
         """)
         
-        # Votes table
+        # Votes table (legacy)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS votes (
                 vote_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 claim_id TEXT NOT NULL,
                 user_id TEXT NOT NULL,
+                vote BOOLEAN NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (claim_id) REFERENCES claims(claim_id),
+                UNIQUE(claim_id, user_id)
+            )
+        """)
+
+        # Community verdicts table (active)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS community_verdicts (
+                verdict_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                claim_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                user_verdict TEXT NOT NULL,
+                notes TEXT,
                 vote BOOLEAN NOT NULL,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (claim_id) REFERENCES claims(claim_id),
@@ -125,17 +140,35 @@ class CommunityDatabase:
         claim_id = self.generate_claim_id(claim_text)
         return self.get_claim(claim_id)
     
-    def submit_vote(self, claim_id: str, user_id: str, vote: bool) -> bool:
+    def submit_vote(
+        self,
+        claim_id: str,
+        user_id: str,
+        vote: bool,
+        user_verdict: Optional[str] = None,
+        notes: Optional[str] = None,
+    ) -> bool:
         """Submit a vote for a claim."""
         conn = self.get_connection()
         cursor = conn.cursor()
         
         try:
-            # Insert vote
             cursor.execute("""
-                INSERT INTO votes (claim_id, user_id, vote, timestamp)
-                VALUES (?, ?, ?, ?)
-            """, (claim_id, user_id, vote, datetime.now()))
+                SELECT claim_id FROM claims WHERE claim_id = ?
+            """, (claim_id,))
+
+            if cursor.fetchone() is None:
+                logger.warning(f"Claim not found for vote submission: {claim_id}")
+                return False
+
+            normalized_verdict = (user_verdict or ('LEGIT' if vote else 'FAKE')).strip().upper()
+
+            # Insert verdict
+            cursor.execute("""
+                INSERT INTO community_verdicts
+                (claim_id, user_id, user_verdict, notes, vote, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (claim_id, user_id, normalized_verdict, notes, vote, datetime.now()))
             
             # Update claim vote count
             cursor.execute("""
@@ -145,7 +178,13 @@ class CommunityDatabase:
             """, (claim_id,))
             
             conn.commit()
-            logger.info(f"Vote submitted: claim={claim_id}, user={user_id}, vote={vote}")
+            logger.info(
+                "Vote submitted: claim=%s, user=%s, vote=%s, verdict=%s",
+                claim_id,
+                user_id,
+                vote,
+                normalized_verdict,
+            )
             
             # Update user reputation
             self._update_user_reputation(user_id)
@@ -168,7 +207,7 @@ class CommunityDatabase:
         # Get user's votes
         cursor.execute("""
             SELECT v.vote, c.ai_verdict
-            FROM votes v
+            FROM community_verdicts v
             JOIN claims c ON v.claim_id = c.claim_id
             WHERE v.user_id = ?
         """, (user_id,))
@@ -208,13 +247,13 @@ class CommunityDatabase:
         
         # Get vote counts
         cursor.execute("""
-            SELECT COUNT(*) as total_votes FROM votes WHERE user_id = ?
+            SELECT COUNT(*) as total_votes FROM community_verdicts WHERE user_id = ?
         """, (user_id,))
         total_votes = cursor.fetchone()['total_votes']
         
         cursor.execute("""
             SELECT COUNT(*) as accurate_votes
-            FROM votes v
+            FROM community_verdicts v
             JOIN claims c ON v.claim_id = c.claim_id
             WHERE v.user_id = ?
             AND ((v.vote = 1 AND c.ai_verdict = 'REAL') OR (v.vote = 0 AND c.ai_verdict = 'FAKE'))
@@ -246,7 +285,7 @@ class CommunityDatabase:
         # Get all votes with user reputations
         cursor.execute("""
             SELECT v.vote, COALESCE(ur.reputation_score, 0.1) as reputation
-            FROM votes v
+            FROM community_verdicts v
             LEFT JOIN user_reputation ur ON v.user_id = ur.user_id
             WHERE v.claim_id = ?
         """, (claim_id,))

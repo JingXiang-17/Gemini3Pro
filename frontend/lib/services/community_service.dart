@@ -51,7 +51,13 @@ class CommunityService {
     }
   }
 
-  Future<VoteResponse> submitVote(String claimId, String userId, bool vote) async {
+  Future<VoteResponse> submitVote({
+    required String claimId,
+    required String userId,
+    required String userVerdict,
+    String? notes,
+    bool? vote,
+  }) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/vote'),
@@ -59,6 +65,8 @@ class CommunityService {
         body: json.encode({
           'claim_id': claimId,
           'user_id': userId,
+          'user_verdict': userVerdict,
+          'notes': notes,
           'vote': vote,
         }),
       );

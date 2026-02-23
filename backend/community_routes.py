@@ -23,7 +23,9 @@ class PostClaimRequest(BaseModel):
 class VoteRequest(BaseModel):
     claim_id: str
     user_id: str
-    vote: bool  # True = supports (REAL), False = rejects (FAKE)
+    vote: Optional[bool] = None  # Backward-compatible payload
+    user_verdict: Optional[str] = None  # Legit / Suspect / Fake
+    notes: Optional[str] = None
 
 class SearchRequest(BaseModel):
     query: str
@@ -76,10 +78,30 @@ async def post_claim(request: PostClaimRequest):
 async def submit_vote(request: VoteRequest):
     """Submit a community vote."""
     try:
+        normalized_verdict = (request.user_verdict or '').strip().upper()
+
+        resolved_vote = request.vote
+        if resolved_vote is None:
+            if normalized_verdict == 'LEGIT':
+                resolved_vote = True
+            elif normalized_verdict in ('SUSPECT', 'FAKE'):
+                resolved_vote = False
+
+        if resolved_vote is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Provide either vote (bool) or user_verdict (Legit/Suspect/Fake)"
+            )
+
+        if not normalized_verdict:
+            normalized_verdict = 'LEGIT' if resolved_vote else 'FAKE'
+
         success = community_db.submit_vote(
-            request.claim_id,
-            request.user_id,
-            request.vote
+            claim_id=request.claim_id,
+            user_id=request.user_id,
+            vote=resolved_vote,
+            user_verdict=normalized_verdict,
+            notes=request.notes,
         )
         
         if not success:
