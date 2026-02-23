@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
 import '../models/grounding_models.dart';
+import '../utils/file_viewer_helper.dart'; // <--- Imports our new safe helper
 
 class SourceTile extends StatelessWidget {
   final String title;
@@ -112,19 +111,13 @@ class SourceTile extends StatelessWidget {
   String _getMimeType(String fileName) {
     final ext = fileName.split('.').last.toLowerCase();
     switch (ext) {
-      case 'pdf':
-        return 'application/pdf';
+      case 'pdf': return 'application/pdf';
       case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'png':
-        return 'image/png';
-      case 'webp':
-        return 'image/webp';
-      case 'gif':
-        return 'image/gif';
-      default:
-        return 'application/octet-stream';
+      case 'jpeg': return 'image/jpeg';
+      case 'png': return 'image/png';
+      case 'webp': return 'image/webp';
+      case 'gif': return 'image/gif';
+      default: return 'application/octet-stream';
     }
   }
 
@@ -137,70 +130,12 @@ class SourceTile extends StatelessWidget {
     final String mimeType = _getMimeType(file.name);
 
     if (mimeType.startsWith('image/')) {
-      _showImageDialog(context, file);
-    } else if (mimeType == 'application/pdf') {
-      _showPdfDialog(context, file);
+      // Image.memory works perfectly on BOTH Web and Mobile without plugins!
+      _showImageDialog(context, file); 
     } else {
-      final blob = html.Blob([file.bytes!], mimeType);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.window.open(url, '_blank');
+      // For PDFs and Blobs, route to our cross-platform helper
+      openPlatformFile(context, file);
     }
-  }
-
-  void _showPdfDialog(BuildContext context, PlatformFile file) {
-    final blob = html.Blob([file.bytes!], 'application/pdf');
-    final url = html.Url.createObjectUrlFromBlob(blob);
-
-    // Register the factory for this specific PDF URL
-    final viewId = 'pdf-tile-view-${file.name.hashCode}';
-    ui_web.platformViewRegistry.registerViewFactory(viewId, (int viewId) {
-      return html.IFrameElement()
-        ..src = url
-        ..style.border = 'none'
-        ..style.width = '100%'
-        ..style.height = '100%';
-    });
-
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        insetPadding: const EdgeInsets.all(40),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.white10)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    file.name,
-                    style: GoogleFonts.outfit(
-                        color: const Color(0xFFD4AF37),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white54),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(bottom: Radius.circular(16)),
-                child: HtmlElementView(viewType: viewId),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _showImageDialog(BuildContext context, PlatformFile file) {
@@ -279,8 +214,8 @@ class SourceTile extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
               color: isActive
-                  ? const Color(0xFFD4AF37).withValues(alpha: 0.1)
-                  : Colors.white.withValues(alpha: 0.03),
+                  ? const Color(0xFFD4AF37).withOpacity(0.1)
+                  : Colors.white.withOpacity(0.03),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isActive ? const Color(0xFFD4AF37) : Colors.white10,
@@ -298,13 +233,12 @@ class SourceTile extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Favicon Placeholder
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: isInaccessible
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                              ? Colors.white.withOpacity(0.05)
+                              : const Color(0xFFD4AF37).withOpacity(0.15),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -323,7 +257,7 @@ class SourceTile extends StatelessWidget {
                           style: GoogleFonts.outfit(
                             color: isInaccessible
                                 ? Colors.white24
-                                : Colors.white.withValues(alpha: 0.9),
+                                : Colors.white.withOpacity(0.9),
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                             decoration: isInaccessible

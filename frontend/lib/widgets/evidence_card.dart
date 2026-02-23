@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
+import '../utils/file_viewer_helper.dart'; // <--- Using our safe helper
 import '../models/grounding_models.dart';
 
 class EvidenceCard extends StatefulWidget {
@@ -136,7 +135,8 @@ class _EvidenceCardState extends State<EvidenceCard> {
     }
   }
 
-  Future<void> _openNativeFile(PlatformFile file) async {
+  // UPDATED: Now uses our cross-platform helper instead of direct web code
+  void _openNativeFile(PlatformFile file) {
     if (file.bytes == null) {
       _showForensicNote();
       return;
@@ -146,69 +146,10 @@ class _EvidenceCardState extends State<EvidenceCard> {
 
     if (mimeType.startsWith('image/')) {
       _showImageDialog(file);
-    } else if (mimeType == 'application/pdf') {
-      _showPdfDialog(file);
     } else {
-      final blob = html.Blob([file.bytes!], mimeType);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.window.open(url, '_blank');
+      // Delegate PDFs and other files to our smart helper
+      openPlatformFile(context, file);
     }
-  }
-
-  void _showPdfDialog(PlatformFile file) {
-    final blob = html.Blob([file.bytes!], 'application/pdf');
-    final url = html.Url.createObjectUrlFromBlob(blob);
-
-    // Register the factory for this specific PDF URL
-    final viewId = 'pdf-view-${file.name.hashCode}';
-    ui_web.platformViewRegistry.registerViewFactory(viewId, (int viewId) {
-      return html.IFrameElement()
-        ..src = url
-        ..style.border = 'none'
-        ..style.width = '100%'
-        ..style.height = '100%';
-    });
-
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        insetPadding: const EdgeInsets.all(40),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.white10)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    file.name,
-                    style: GoogleFonts.outfit(
-                        color: const Color(0xFFD4AF37),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white54),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(bottom: Radius.circular(16)),
-                child: HtmlElementView(viewType: viewId),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _showImageDialog(PlatformFile file) {
@@ -286,13 +227,13 @@ class _EvidenceCardState extends State<EvidenceCard> {
         border: Border.all(
           color: widget.isActive
               ? const Color(0xFFD4AF37)
-              : const Color(0xFFD4AF37).withValues(alpha: 0.2),
+              : const Color(0xFFD4AF37).withOpacity(0.2),
           width: widget.isActive ? 1.0 : 0.5,
         ),
         boxShadow: widget.isActive
             ? [
                 BoxShadow(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                  color: const Color(0xFFD4AF37).withOpacity(0.15),
                   blurRadius: 15,
                   spreadRadius: 2,
                 ),
@@ -319,7 +260,7 @@ class _EvidenceCardState extends State<EvidenceCard> {
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
                               color: const Color(0xFFD4AF37)
-                                  .withValues(alpha: 0.1),
+                                  .withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(Icons.auto_awesome,
@@ -382,10 +323,10 @@ class _EvidenceCardState extends State<EvidenceCard> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.3),
+                          color: Colors.black.withOpacity(0.3),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.05),
+                            color: Colors.white.withOpacity(0.05),
                           ),
                         ),
                         child: LayoutBuilder(
@@ -415,7 +356,7 @@ class _EvidenceCardState extends State<EvidenceCard> {
                                       ? null
                                       : TextOverflow.ellipsis,
                                   style: GoogleFonts.outfit(
-                                    color: Colors.white.withValues(alpha: 0.85),
+                                    color: Colors.white.withOpacity(0.85),
                                     fontSize: 13,
                                     height: 1.5,
                                     fontStyle: FontStyle.italic,
