@@ -49,7 +49,7 @@ Before running or deploying, you must configure the project to use **your** infr
 ```dart
 final String baseUrl = kReleaseMode
     ? 'https://us-central1-<YOUR_PROJECT_ID>.cloudfunctions.net/analyze' // <--- UPDATE THIS
-    : 'http://127.0.0.1:8080';
+    : 'http://127.0.0.1:8000';
 ```
 
 ---

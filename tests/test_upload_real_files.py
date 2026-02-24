@@ -6,7 +6,7 @@ import glob
 import mimetypes
 
 async def test_upload_real_files():
-    url = "http://127.0.0.1:8080/analyze"
+    url = "http://127.0.0.1:8000/analyze"
     
     # Path to assets (relative to project root/tests)
     # If running from project root: tests/assets/

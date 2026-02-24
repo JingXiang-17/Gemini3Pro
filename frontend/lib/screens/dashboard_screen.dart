@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/grounding_models.dart';
@@ -13,6 +14,7 @@ import '../widgets/global_menu_button.dart';
 import '../widgets/juicy_button.dart';
 import 'dart:async';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'community_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -125,7 +127,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     });
   }
 
-  Future<void> _handleAnalysis() async {
+  Future<void> _handleAnalysis({bool isRetry = false}) async {
     final text = _inputController.text.trim();
     if (text.isEmpty &&
         _pendingAttachments.isEmpty &&
@@ -164,6 +166,27 @@ class _DashboardScreenState extends State<DashboardScreen>
       }
     } catch (e) {
       debugPrint('ANALYSIS ERROR: $e');
+      
+      // Auto-retry once if it's the first attempt and it's a timeout/cold-start error
+      if (!isRetry && mounted) {
+        // Only retry for timeout errors or cold start indicators
+        final errorString = e.toString().toLowerCase();
+        final isRetryableError = e is TimeoutException || 
+                                  errorString.contains('timeout') ||
+                                  errorString.contains('warm') ||
+                                  errorString.contains('cold start');
+        
+        if (isRetryableError) {
+          debugPrint('Retrying after cold start...');
+          await Future.delayed(const Duration(seconds: 2));
+          
+          // Check mounted again after delay
+          if (mounted) {
+            return _handleAnalysis(isRetry: true);
+          }
+        }
+      }
+      
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -402,14 +425,25 @@ class _DashboardScreenState extends State<DashboardScreen>
           Container(
             width: 80,
             color: Colors.black,
-            child: const Column(
+            child: Column(
               children: [
-                SizedBox(height: 30),
-                Icon(Icons.shield_outlined, color: Color(0xFFD4AF37), size: 40),
-                SizedBox(height: 40),
-                _SidebarIcons(icon: Icons.dashboard, isActive: true),
-                _SidebarIcons(icon: Icons.history, isActive: false),
-                _SidebarIcons(icon: Icons.settings, isActive: false),
+                const SizedBox(height: 30),
+                const Icon(Icons.shield_outlined, color: Color(0xFFD4AF37), size: 40),
+                const SizedBox(height: 40),
+                const _SidebarIcons(icon: Icons.dashboard, isActive: true),
+                const _SidebarIcons(icon: Icons.history, isActive: false),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CommunityScreen(),
+                      ),
+                    );
+                  },
+                  child: const _SidebarIcons(icon: Icons.groups, isActive: false),
+                ),
+                const _SidebarIcons(icon: Icons.settings, isActive: false),
               ],
             ),
           ),

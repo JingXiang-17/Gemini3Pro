@@ -25,6 +25,9 @@ import firebase_admin
 # Import models
 from models import AnalysisRequest, AnalysisResponse, GroundingCitation, GroundingSupport
 
+# Import community routes
+from community_routes import router as community_router
+
 # --- Initialization ---
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -35,6 +38,9 @@ if not firebase_admin._apps:
 
 app = FastAPI(title="VeriScan Core Engine")
 _grounding_service = None
+
+# Register community routes
+app.include_router(community_router)
 
 def get_grounding_service():
     global _grounding_service
@@ -188,18 +194,29 @@ async def process_multimodal_gemini(gemini_parts: List[Any], request_id: str, fi
         # 3. Parse JSON
         import re
         try:
-            match = re.search(r'\{[\s\S]*\}', response_text)
-            if match: response_text = match.group(0)
+            # Check if response is empty
+            if not response_text or len(response_text) == 0:
+                logger.error("Empty response from Gemini API")
+                data = {
+                    "verdict": "UNVERIFIED",
+                    "confidence_score": 0.0,
+                    "analysis": "Unable to analyze: The AI service returned an empty response. This usually indicates an authentication or configuration issue.",
+                    "key_findings": ["Empty AI response - check Google Cloud credentials"]
+                }
+            else:
+                match = re.search(r'\{[\s\S]*\}', response_text)
+                if match: response_text = match.group(0)
+                
+                data = json.loads(response_text)
             
-            data = json.loads(response_text)
-            
-        except json.JSONDecodeError:
-            print(f"❌ JSON Parse Failed. Raw Text: {response_text}")
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON Parse Failed. Raw Text: {response_text[:200]}...")
+            logger.error(f"JSON Decode Error: {str(e)}")
             data = {
                 "verdict": "UNVERIFIED",
                 "confidence_score": 0.0,
-                "analysis": "The AI response format was invalid.",
-                "key_findings": ["Formatting Error"]
+                "analysis": "Unable to process AI response: The response format was not valid JSON. This may be due to authentication issues with Google Cloud.",
+                "key_findings": ["AI response format error - check Google Cloud configuration"]
             }
 
         # 4. Merge Citations
@@ -214,12 +231,28 @@ async def process_multimodal_gemini(gemini_parts: List[Any], request_id: str, fi
         return AnalysisResponse(**data)
 
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
         logger.error(f"Analysis Processing Error: {e}")
+        logger.error(f"Stack trace: {error_trace}")
+        
+        # Provide friendly error message based on error type
+        error_msg = str(e)
+        if "credentials" in error_msg.lower() or "authentication" in error_msg.lower():
+            friendly_msg = "Google Cloud authentication is not configured. Please set up Application Default Credentials or provide a service account key."
+            finding = "Missing Google Cloud credentials"
+        elif "permission" in error_msg.lower() or "access" in error_msg.lower():
+            friendly_msg = "Permission denied: Your Google Cloud account doesn't have access to Vertex AI. Please check IAM permissions."
+            finding = "Insufficient permissions for Vertex AI"
+        else:
+            friendly_msg = f"An unexpected error occurred during analysis: {error_msg}"
+            finding = error_msg
+        
         return AnalysisResponse(
             verdict="UNVERIFIED",
             confidence_score=0.0,
-            analysis=f"System Error: {str(e)}",
-            key_findings=[str(e)],
+            analysis=friendly_msg,
+            key_findings=[finding],
             grounding_citations=[]
         )
 
@@ -384,4 +417,4 @@ def analyze(req: https_fn.Request) -> https_fn.Response:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
