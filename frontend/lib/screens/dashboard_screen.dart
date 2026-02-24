@@ -42,18 +42,18 @@ class _DashboardScreenState extends State<DashboardScreen>
     super.initState();
 
     // 1. Listen to shared text WHILE THE APP IS OPEN
-    _intentDataStreamSubscription = ReceiveSharingIntent.instance.getMediaStream().listen((value) {
+    _intentDataStreamSubscription = ReceiveSharingIntent.instance.getTextStream().listen((value) {
       if (value.isNotEmpty) {
-        _handleSharedText(value.first.path);
+        _handleSharedText(value);
       }
     }, onError: (err) {
       debugPrint("Shared Intent Error: $err");
     });
 
     // 2. Get the shared text if the app was CLOSED (Cold Start)
-    ReceiveSharingIntent.instance.getInitialMedia().then((value) {
-      if (value.isNotEmpty) {
-        _handleSharedText(value.first.path);
+    ReceiveSharingIntent.instance.getInitialText().then((value) {
+      if (value != null && value.isNotEmpty) {
+        _handleSharedText(value);
       }
     });
   }
