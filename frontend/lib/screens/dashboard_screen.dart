@@ -43,19 +43,39 @@ class _DashboardScreenState extends State<DashboardScreen>
   void initState() {
     super.initState();
 
-    // 1. Listen to shared text WHILE THE APP IS OPEN
-    _intentDataStreamSubscription = ReceiveSharingIntent.instance.getTextStream().listen((value) {
-      if (value.isNotEmpty) {
-        _handleSharedText(value);
+    // 1. Listen to incoming shared media (files/text) WHILE THE APP IS OPEN
+    // receive_sharing_intent exposes media streams; text shares arrive as
+    // SharedMediaFile where `path` contains the text payload.
+    _intentDataStreamSubscription = ReceiveSharingIntent.instance
+        .getMediaStream()
+        .listen((List<SharedMediaFile> value) {
+      try {
+        if (value.isNotEmpty) {
+          final first = value.first;
+          final sharedText = first.path;
+          if (sharedText.isNotEmpty) {
+            _handleSharedText(sharedText);
+          }
+        }
+      } catch (e) {
+        debugPrint('Shared Intent processing error: $e');
       }
     }, onError: (err) {
       debugPrint("Shared Intent Error: $err");
     });
 
-    // 2. Get the shared text if the app was CLOSED (Cold Start)
-    ReceiveSharingIntent.instance.getInitialText().then((value) {
-      if (value != null && value.isNotEmpty) {
-        _handleSharedText(value);
+    // 2. Get the initial shared media if the app was CLOSED (Cold Start)
+    ReceiveSharingIntent.instance.getInitialMedia().then((value) {
+      try {
+        if (value.isNotEmpty) {
+          final first = value.first;
+          final sharedText = first.path;
+          if (sharedText.isNotEmpty) {
+            _handleSharedText(sharedText);
+          }
+        }
+      } catch (e) {
+        debugPrint('Initial shared intent processing error: $e');
       }
     });
   }
