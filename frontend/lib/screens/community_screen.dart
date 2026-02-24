@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/community_models.dart';
 import '../services/community_service.dart';
+import '../widgets/discussion_modal.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -289,14 +290,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
             width: double.infinity,
             child: OutlinedButton(
               onPressed: () {
-                // In a full implementation, this would navigate to a discussion page
-                final previewText = claim.claimText.length > 30 
-                    ? claim.claimText.substring(0, 30) 
-                    : claim.claimText;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Discussion view for: $previewText...'),
-                    backgroundColor: const Color(0xFFD4AF37),
+                print('🔍 Opening discussion for claim ID: ${claim.claimId}');
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) => DiscussionModal(
+                    claimId: claim.claimId,
                   ),
                 );
               },

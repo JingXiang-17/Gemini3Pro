@@ -69,12 +69,10 @@ class _CommunityVoteBoxState extends State<CommunityVoteBox> {
   }
 
   String _resolveUserId() {
-    final email = widget.userEmail?.trim();
-    if (email != null && email.isNotEmpty) {
-      return email;
-    }
-
-    return 'demo_user@local.session';
+    // Generate anonymous user ID for each vote
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final random = (timestamp % 100000).toString().padLeft(5, '0');
+    return 'anonymous_$random';
   }
 
   Future<bool> _submitCommunityVote({
@@ -365,13 +363,37 @@ class _CommunityVoteBoxState extends State<CommunityVoteBox> {
             ),
           ),
         ),
+      );
+    }
+
+    // Status A: Not yet verified (no data from community)
+    if (_claimData == null || !_claimData!.exists) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.02),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'COMMUNITY VOTE',
+              style: GoogleFonts.outfit(
+                color: Colors.white54,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
             const SizedBox(height: 10),
             TextButton(
               onPressed: _isSubmittingVote ? null : _openSubmissionModal,
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 foregroundColor: const Color(0xFFFFC107),
-    if (_claimData == null || !_claimData!.exists) {
+              ),
               child: Text(
                 'Ask the community to verify',
                 style: GoogleFonts.outfit(
@@ -444,8 +466,8 @@ class _CommunityVoteBoxState extends State<CommunityVoteBox> {
               color: Colors.white70,
               fontSize: 12,
               fontWeight: FontWeight.w500,
-      return Container(
-        padding: const EdgeInsets.all(20),
+            ),
+          ),
           const SizedBox(height: 12),
           // Trust Score Display
           Container(
@@ -488,77 +510,11 @@ class _CommunityVoteBoxState extends State<CommunityVoteBox> {
               fontSize: 11,
             ),
           ),
-          const SizedBox(height: 16),
-          TextButton(
-            onPressed: _isSubmittingVote ? null : _openSubmissionModal,
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              foregroundColor: const Color(0xFFFFC107),
-            ),
-            child: Text(
-              'Ask the community to verify',
-              style: GoogleFonts.outfit(
-                color: const Color(0xFFFFC107),
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          if (_submissionStateMessage != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              _submissionStateMessage!,
-              style: GoogleFonts.outfit(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-              color: (isTrue ? Colors.green : Colors.red).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: (isTrue ? Colors.green : Colors.red).withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${trustScore.toStringAsFixed(0)}%',
-                  style: GoogleFonts.outfit(
-                    color: isTrue ? Colors.green : Colors.red,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  isTrue ? 'TRUE' : 'FALSE',
-                  style: GoogleFonts.outfit(
-                    color: isTrue ? Colors.green : Colors.red,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '$voteCount votes',
-            style: GoogleFonts.outfit(
-              color: Colors.white54,
-              fontSize: 11,
-            ),
-          ),
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _handleSupportVerdict,
+              onPressed: _isSubmittingVote ? null : _openSubmissionModal,
               icon: const Icon(Icons.thumb_up, size: 18),
               label: Text(
                 'Support this Verdict',
@@ -577,6 +533,16 @@ class _CommunityVoteBoxState extends State<CommunityVoteBox> {
               ),
             ),
           ),
+          if (_submissionStateMessage != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _submissionStateMessage!,
+              style: GoogleFonts.outfit(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ],
       ),
     );

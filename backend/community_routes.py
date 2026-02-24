@@ -194,3 +194,39 @@ async def get_user_reputation(user_id: str):
     except Exception as e:
         logger.error(f"Error getting user reputation: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/discussion/{claim_id}")
+async def get_claim_discussion(claim_id: str):
+    """Get claim discussion with all votes and notes."""
+    try:
+        logger.info(f"Fetching discussion for claim_id: {claim_id}")
+        discussion = community_db.get_claim_discussion(claim_id)
+        
+        if not discussion:
+            logger.warning(f"Claim not found: {claim_id}")
+            # Return empty discussion structure instead of 404
+            return {
+                "success": True,
+                "claim_id": claim_id,
+                "claim_text": "Claim not found",
+                "ai_verdict": "Unknown",
+                "trust_score": 0.0,
+                "vote_count": 0,
+                "created_at": None,
+                "votes": []
+            }
+        
+        logger.info(f"Found claim with {len(discussion['votes'])} votes")
+        return {
+            "success": True,
+            "claim_id": discussion['claim_id'],
+            "claim_text": discussion['claim_text'],
+            "ai_verdict": discussion['ai_verdict'],
+            "trust_score": round(discussion['trust_score'], 2),
+            "vote_count": discussion['vote_count'],
+            "created_at": discussion['created_at'],
+            "votes": discussion['votes']
+        }
+    except Exception as e:
+        logger.error(f"Error getting claim discussion: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

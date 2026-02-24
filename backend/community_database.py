@@ -383,3 +383,46 @@ class CommunityDatabase:
             'reputation_score': 0.0,
             'last_updated': None
         }
+    
+    def get_claim_discussion(self, claim_id: str) -> Dict:
+        """Get claim details with all votes/notes for discussion view."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        # Get claim details
+        cursor.execute("""
+            SELECT * FROM claims WHERE claim_id = ?
+        """, (claim_id,))
+        
+        claim_row = cursor.fetchone()
+        if not claim_row:
+            self._close_connection(conn)
+            return None
+        
+        claim_data = dict(claim_row)
+        
+        # Get all votes with notes
+        cursor.execute("""
+            SELECT user_id, user_verdict, notes, timestamp
+            FROM community_verdicts
+            WHERE claim_id = ?
+            ORDER BY timestamp DESC
+        """, (claim_id,))
+        
+        votes_rows = cursor.fetchall()
+        self._close_connection(conn)
+        
+        votes = [dict(row) for row in votes_rows]
+        
+        # Calculate trust score
+        trust_score, vote_count = self.calculate_weighted_trust_score(claim_id)
+        
+        return {
+            'claim_id': claim_data['claim_id'],
+            'claim_text': claim_data['claim_text'],
+            'ai_verdict': claim_data['ai_verdict'],
+            'trust_score': trust_score,
+            'vote_count': vote_count,
+            'created_at': claim_data['created_at'],
+            'votes': votes
+        }
