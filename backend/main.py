@@ -816,9 +816,79 @@ def analyze(req: https_fn.Request) -> https_fn.Response:
     if req.method == 'OPTIONS':
         return https_fn.Response(status=204, headers={
             'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         })
+
+    # --- Community routes: forward to FastAPI app ---
+    # Firebase Hosting rewrites /community/** to this Cloud Function.
+    # Detect community paths and handle them via the FastAPI ASGI app.
+    req_path = req.path or ''
+    if '/community' in req_path:
+        import asyncio
+
+        async def _handle_community():
+            # Build a minimal ASGI scope from the Cloud Function request
+            body = req.get_data()
+            headers = [(k.lower().encode(), v.encode()) for k, v in req.headers.items()]
+            
+            # Strip everything before /community so FastAPI routing works
+            community_path = '/community' + req_path.split('/community', 1)[-1]
+            
+            scope = {
+                'type': 'http',
+                'method': req.method,
+                'path': community_path,
+                'query_string': req.query_string,
+                'headers': headers,
+                'root_path': '',
+            }
+
+            response_body = []
+            response_status = [200]
+            response_headers = [{}]
+
+            async def receive():
+                return {'type': 'http.request', 'body': body, 'more_body': False}
+
+            async def send(message):
+                if message['type'] == 'http.response.start':
+                    response_status[0] = message['status']
+                    response_headers[0] = {
+                        k.decode(): v.decode() 
+                        for k, v in message.get('headers', [])
+                    }
+                elif message['type'] == 'http.response.body':
+                    response_body.append(message.get('body', b''))
+
+            await app(scope, receive, send)
+            return (
+                b''.join(response_body),
+                response_status[0],
+                response_headers[0],
+            )
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            body_bytes, status_code, resp_headers = loop.run_until_complete(_handle_community())
+            resp_headers['Access-Control-Allow-Origin'] = '*'
+            return https_fn.Response(
+                body_bytes,
+                status=status_code,
+                headers=resp_headers,
+                mimetype=resp_headers.get('content-type', 'application/json'),
+            )
+        except Exception as e:
+            logger.error(f"Community route error: {e}")
+            return https_fn.Response(
+                json.dumps({"error": str(e)}),
+                status=500,
+                mimetype='application/json',
+                headers={'Access-Control-Allow-Origin': '*'},
+            )
+        finally:
+            loop.close()
 
     if req.method != 'POST':
         return https_fn.Response("Method Not Allowed. Use POST.", status=405, headers={'Access-Control-Allow-Origin': '*'})
@@ -830,6 +900,7 @@ def analyze(req: https_fn.Request) -> https_fn.Response:
         metadata_str = req.form.get("metadata")
         if not metadata_str:
              return https_fn.Response(json.dumps({"error": "Missing metadata field"}), status=400, mimetype='application/json')
+
         
         meta_data = json.loads(metadata_str)
         request_id = meta_data.get("request_id", "prod_req")
