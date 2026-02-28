@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:html_unescape/html_unescape.dart';
+import '../utils/file_viewer_helper.dart';
 import '../models/grounding_models.dart';
-import '../utils/file_viewer_helper.dart'; // <--- Imports our new safe helper
+import 'source_reliability_badge.dart';
 
 class SourceTile extends StatelessWidget {
   final String title;
@@ -11,7 +13,13 @@ class SourceTile extends StatelessWidget {
   final List<SourceAttachment>? attachments;
   final String status;
   final int count;
+  final int sourceId;
   final bool isActive;
+  final double? score;
+  final double? confidence;
+  final double? authority;
+  final bool isVerified;
+  final String? snippet;
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
 
@@ -22,7 +30,13 @@ class SourceTile extends StatelessWidget {
     this.attachments,
     this.status = 'live',
     this.count = 1,
+    this.sourceId = 0,
     this.isActive = false,
+    this.score,
+    this.confidence,
+    this.authority,
+    this.isVerified = false,
+    this.snippet,
     this.onTap,
     this.onDelete,
   });
@@ -79,7 +93,9 @@ class SourceTile extends StatelessWidget {
             Text(
               "Forensic Diagnostic",
               style: GoogleFonts.outfit(
-                  color: const Color(0xFFD4AF37), fontWeight: FontWeight.bold),
+                color: const Color(0xFFD4AF37),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -90,10 +106,13 @@ class SourceTile extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("DISMISS",
-                style: GoogleFonts.outfit(
-                    color: const Color(0xFFD4AF37),
-                    fontWeight: FontWeight.bold)),
+            child: Text(
+              "DISMISS",
+              style: GoogleFonts.outfit(
+                color: const Color(0xFFD4AF37),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -111,13 +130,19 @@ class SourceTile extends StatelessWidget {
   String _getMimeType(String fileName) {
     final ext = fileName.split('.').last.toLowerCase();
     switch (ext) {
-      case 'pdf': return 'application/pdf';
+      case 'pdf':
+        return 'application/pdf';
       case 'jpg':
-      case 'jpeg': return 'image/jpeg';
-      case 'png': return 'image/png';
-      case 'webp': return 'image/webp';
-      case 'gif': return 'image/gif';
-      default: return 'application/octet-stream';
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'gif':
+        return 'image/gif';
+      default:
+        return 'application/octet-stream';
     }
   }
 
@@ -130,10 +155,8 @@ class SourceTile extends StatelessWidget {
     final String mimeType = _getMimeType(file.name);
 
     if (mimeType.startsWith('image/')) {
-      // Image.memory works perfectly on BOTH Web and Mobile without plugins!
-      _showImageDialog(context, file); 
+      _showImageDialog(context, file);
     } else {
-      // For PDFs and Blobs, route to our cross-platform helper
       openPlatformFile(context, file);
     }
   }
@@ -159,10 +182,7 @@ class SourceTile extends StatelessWidget {
             Flexible(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.memory(
-                  file.bytes!,
-                  fit: BoxFit.contain,
-                ),
+                child: Image.memory(file.bytes!, fit: BoxFit.contain),
               ),
             ),
             const SizedBox(height: 12),
@@ -185,17 +205,21 @@ class SourceTile extends StatelessWidget {
         title: Text(
           "Forensic Note",
           style: GoogleFonts.outfit(
-              color: const Color(0xFFD4AF37), fontWeight: FontWeight.bold),
+            color: const Color(0xFFD4AF37),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         content: Text(
-          "This is an analyzed attachment. To view the original, please refer to your local file: $title",
+          "This is an analyzed attachment. To view the original, please refer to your local file: ${HtmlUnescape().convert(title)}",
           style: GoogleFonts.outfit(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("OK",
-                style: GoogleFonts.outfit(color: const Color(0xFFD4AF37))),
+            child: Text(
+              "OK",
+              style: GoogleFonts.outfit(color: const Color(0xFFD4AF37)),
+            ),
           ),
         ],
       ),
@@ -205,6 +229,7 @@ class SourceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isInaccessible = status == 'dead' || status == 'restricted';
+    final unescape = HtmlUnescape();
 
     return RepaintBoundary(
       child: Stack(
@@ -214,13 +239,10 @@ class SourceTile extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
               color: isActive
-                  ? const Color(0xFFD4AF37).withOpacity(0.1)
-                  : Colors.white.withOpacity(0.03),
+                  ? const Color(0xFFD4AF37).withValues(alpha: 0.1)
+                  : Colors.white.withValues(alpha: 0.03),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isActive ? const Color(0xFFD4AF37) : Colors.white10,
-                width: isActive ? 1.0 : 0.5,
-              ),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
             ),
             child: Material(
               color: Colors.transparent,
@@ -228,36 +250,53 @@ class SourceTile extends StatelessWidget {
                 onTap: onTap ?? () => _handleViewAction(context),
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: isInaccessible
-                              ? Colors.white.withOpacity(0.05)
-                              : const Color(0xFFD4AF37).withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                            isInaccessible
-                                ? Icons.warning_amber_rounded
-                                : Icons.link,
-                            color: isInaccessible
-                                ? Colors.white24
-                                : const Color(0xFFD4AF37),
-                            size: 14),
+                      // Source ID Badge with Radial Ring
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          SourceReliabilityBadge(
+                            sourceId: sourceId,
+                            isActive: isActive,
+                            score: score,
+                            confidence: confidence,
+                            authority: authority,
+                          ),
+                          if (isVerified)
+                            Positioned(
+                              top: -4,
+                              right: -4,
+                              child: Tooltip(
+                                message: "Verified IFCN Signatory",
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF121212),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.verified,
+                                    color: Colors.tealAccent,
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          title,
+                          unescape.convert(title),
                           style: GoogleFonts.outfit(
                             color: isInaccessible
                                 ? Colors.white24
-                                : Colors.white.withOpacity(0.9),
+                                : Colors.white.withValues(alpha: 0.9),
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                             decoration: isInaccessible
@@ -271,8 +310,11 @@ class SourceTile extends StatelessWidget {
                       const SizedBox(width: 8),
                       if (onDelete != null)
                         IconButton(
-                          icon: const Icon(Icons.delete_outline,
-                              color: Color(0xFFD4AF37), size: 16),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Color(0xFFD4AF37),
+                            size: 16,
+                          ),
                           onPressed: onDelete,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -281,15 +323,16 @@ class SourceTile extends StatelessWidget {
                         IconButton(
                           tooltip: _actionLabel,
                           icon: Icon(
-                              _isUploadedFile
-                                  ? Icons.visibility_outlined
-                                  : (isInaccessible
-                                      ? Icons.report_problem_outlined
-                                      : Icons.open_in_new),
-                              color: (_isUploadedFile || !isInaccessible)
-                                  ? const Color(0xFFD4AF37)
-                                  : Colors.white24,
-                              size: 14),
+                            _isUploadedFile
+                                ? Icons.visibility_outlined
+                                : (isInaccessible
+                                    ? Icons.report_problem_outlined
+                                    : Icons.open_in_new),
+                            color: (_isUploadedFile || !isInaccessible)
+                                ? const Color(0xFFD4AF37)
+                                : Colors.white24,
+                            size: 14,
+                          ),
                           onPressed: () => _handleViewAction(context),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -311,7 +354,7 @@ class SourceTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),

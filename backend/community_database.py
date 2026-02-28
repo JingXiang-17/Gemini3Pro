@@ -1,14 +1,20 @@
 import sqlite3
 import hashlib
 import logging
+import os
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple
 import math
 
 logger = logging.getLogger(__name__)
 
+# On Cloud Run, the filesystem is read-only except for /tmp
+# Detect if we're in a cloud environment and use /tmp accordingly
+_IS_CLOUD_RUN = os.environ.get('K_SERVICE') is not None  # Cloud Run sets this env var
+_DEFAULT_DB_PATH = '/tmp/community.db' if _IS_CLOUD_RUN else 'community.db'
+
 class CommunityDatabase:
-    def __init__(self, db_path: str = "community.db"):
+    def __init__(self, db_path: str = _DEFAULT_DB_PATH):
         self.db_path = db_path
         self._connection = None
         # For in-memory databases, we need to keep connection alive

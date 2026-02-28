@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'screens/dashboard_screen.dart'; 
-import 'screens/dashboard_landing_view.dart'; 
+import 'screens/dashboard_screen.dart';
+import 'screens/dashboard_landing_view.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
@@ -42,7 +42,7 @@ class VeriScanApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const SplashScreen(), 
+      home: const SplashScreen(),
     );
   }
 }
@@ -55,11 +55,8 @@ class LandingWrapper extends StatelessWidget {
     return DashboardLandingView(
       // Use helper for sliding animation
       onStartAnalysis: () {
-        Navigator.of(context).pushReplacement(createSlideRoute(const DashboardScreen()));
-      },
-      // Same for menu button
-      onOpenMenu: () {
-        Navigator.of(context).pushReplacement(createSlideRoute(const DashboardScreen()));
+        Navigator.of(context)
+            .pushReplacement(createSlideRoute(const DashboardScreen()));
       },
     );
   }
@@ -75,7 +72,7 @@ Route createSlideRoute(Widget page) {
       const curve = Curves.easeInOutCubic; // Smooth ease
 
       var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-      
+
       // Combine Slide with Fade for that premium feel
       return SlideTransition(
         position: animation.drive(tween),
@@ -85,6 +82,6 @@ Route createSlideRoute(Widget page) {
         ),
       );
     },
-    transitionDuration: const Duration(milliseconds: 500), // Slower, smoother
+    transitionDuration: const Duration(milliseconds: 200), // Ultra-fast
   );
 }

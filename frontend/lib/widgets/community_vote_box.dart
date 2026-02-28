@@ -23,7 +23,6 @@ class CommunityVoteBox extends StatefulWidget {
 class _CommunityVoteBoxState extends State<CommunityVoteBox> {
   final CommunityService _communityService = CommunityService();
   CommunityClaimData? _claimData;
-  bool _isLoading = false;
   bool _hasError = false;
   bool _isSubmittingVote = false;
   String? _submissionStateMessage;
@@ -46,7 +45,6 @@ class _CommunityVoteBoxState extends State<CommunityVoteBox> {
 
   Future<void> _loadClaimData() async {
     setState(() {
-      _isLoading = true;
       _hasError = false;
     });
 
@@ -55,14 +53,12 @@ class _CommunityVoteBoxState extends State<CommunityVoteBox> {
       if (mounted) {
         setState(() {
           _claimData = data;
-          _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _hasError = true;
-          _isLoading = false;
         });
       }
     }
@@ -92,8 +88,8 @@ class _CommunityVoteBoxState extends State<CommunityVoteBox> {
       String claimId = _claimData?.claimId ?? '';
 
       if (claimId.isEmpty) {
-        final postResponse =
-            await _communityService.postClaim(widget.claimText!, widget.aiVerdict!);
+        final postResponse = await _communityService.postClaim(
+            widget.claimText!, widget.aiVerdict!);
         claimId = postResponse.claimId;
       }
 
@@ -244,7 +240,8 @@ class _CommunityVoteBoxState extends State<CommunityVoteBox> {
                         fillColor: Colors.white.withValues(alpha: 0.06),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFFFC107)),
+                          borderSide:
+                              const BorderSide(color: Color(0xFFFFC107)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -283,13 +280,18 @@ class _CommunityVoteBoxState extends State<CommunityVoteBox> {
                                     notes: notesController.text,
                                   );
 
-                                  if (!mounted) return;
+                                  if (!mounted ||
+                                      !dialogContext.mounted ||
+                                      !context.mounted) {
+                                    return;
+                                  }
 
                                   if (success) {
                                     Navigator.of(dialogContext).pop();
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text('Vote posted to community.'),
+                                        content:
+                                            Text('Vote posted to community.'),
                                         backgroundColor: Colors.green,
                                       ),
                                     );
@@ -300,7 +302,8 @@ class _CommunityVoteBoxState extends State<CommunityVoteBox> {
                                       ),
                                     );
                                   } else {
-                                    setModalState(() => isModalSubmitting = false);
+                                    setModalState(
+                                        () => isModalSubmitting = false);
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
@@ -473,10 +476,12 @@ class _CommunityVoteBoxState extends State<CommunityVoteBox> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: (isTrue ? Colors.green : Colors.red).withValues(alpha: 0.1),
+              color:
+                  (isTrue ? Colors.green : Colors.red).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: (isTrue ? Colors.green : Colors.red).withValues(alpha: 0.3),
+                color:
+                    (isTrue ? Colors.green : Colors.red).withValues(alpha: 0.3),
               ),
             ),
             child: Row(

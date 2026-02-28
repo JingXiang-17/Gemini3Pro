@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/community_models.dart';
 import '../services/community_service.dart';
 import '../widgets/discussion_modal.dart';
+import '../widgets/unified_sidebar.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -88,65 +89,78 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFFD4AF37)),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'COMMUNITY',
-          style: GoogleFonts.outfit(
-            color: const Color(0xFFD4AF37),
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2.0,
-          ),
-        ),
-      ),
-      body: Column(
+      body: Row(
         children: [
-          // Search Bar
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.black,
-              border: Border(
-                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-              ),
-            ),
-            child: TextField(
-              controller: _searchController,
-              onSubmitted: _handleSearch,
-              style: GoogleFonts.outfit(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Search Community Records',
-                hintStyle: GoogleFonts.outfit(color: Colors.white38),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white54),
-                        onPressed: () {
-                          _searchController.clear();
-                          _loadTopClaims();
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.05),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              ),
-            ),
-          ),
-
-          // Content
+          const UnifiedSidebar(activeIndex: 2),
           Expanded(
-            child: _buildContent(),
+            child: Column(
+              children: [
+                // Custom Header (replacing AppBar)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  color: Colors.black,
+                  child: Row(
+                    children: [
+                      Text(
+                        'COMMUNITY',
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFFD4AF37),
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Search Bar
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    border: Border(
+                      bottom: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.05)),
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onSubmitted: _handleSearch,
+                    style: GoogleFonts.outfit(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Search Community Records',
+                      hintStyle: GoogleFonts.outfit(color: Colors.white38),
+                      prefixIcon:
+                          const Icon(Icons.search, color: Color(0xFFD4AF37)),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear,
+                                  color: Colors.white54),
+                              onPressed: () {
+                                _searchController.clear();
+                                _loadTopClaims();
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.05),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 16),
+                    ),
+                  ),
+                ),
+
+                // Content
+                Expanded(
+                  child: _buildContent(),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -205,10 +219,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Widget _buildList() {
     return Column(
-      children: _claims.map((claim) => Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: _buildClaimCard(claim, false),
-      )).toList(),
+      children: _claims
+          .map((claim) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _buildClaimCard(claim, false),
+              ))
+          .toList(),
     );
   }
 
@@ -290,7 +306,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
             width: double.infinity,
             child: OutlinedButton(
               onPressed: () {
-                print('🔍 Opening discussion for claim ID: ${claim.claimId}');
+                debugPrint(
+                    '🔍 Opening discussion for claim ID: ${claim.claimId}');
                 showDialog(
                   context: context,
                   builder: (BuildContext context) => DiscussionModal(

@@ -1,0 +1,490 @@
+{
+    "verdict": "MIXTURE",
+    "confidence_score": 0.85,
+    "analysis": "**1. The Core Claim(s):**\nThe claim suggests that drinking lemon water every morning significantly boosts metabolism and cures chronic digestive diseases.\n\n**2. Evidence Breakdown:**\n*   Drinking lemon water can provide vitamin C and aid in hydration.\n*   It may help with digestion due to the citric acid, which can help break down food.\n*   Lemon water might help prevent kidney stones.\n*   It can act as a low-calorie alternative to sugary drinks, potentially supporting weight management.\n*   Some studies suggest that drinking water, including lemon water, can slightly increase metabolism.\n*   Lemon water is not a cure for chronic digestive diseases.\n*   The high acidity of lemons may cause or worsen certain health issues like heartburn and can erode tooth enamel.\n\n**3. Context & Nuance:**\nWhile lemon water offers some benefits like hydration and a vitamin C boost, the claim overstates its effects. The metabolic boost is primarily from the water itself, not the lemon, and it's not a significant change. Lemon water can aid digestion for some, but it's not a cure for chronic digestive diseases and may even worsen certain conditions due to its acidity. The claim presents a simplified and exaggerated view of lemon water's benefits.\n\n**4. Red Flags & Discrepancies:**\nNo major discrepancies found in the verified sources.",
+    "multimodal_cross_check": false,
+    "source_metadata": null,
+    "grounding_citations": [
+        {
+            "id": 3,
+            "title": "The Biggest Benefits of Drinking Lemon Water - GoodRx",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGyZd2D3K6kxwynpKq-GSDqL-vKrM0E5QjJ7tkRdGq9ZWusVy9lXpqAs-i4h6cJsnPHQqz0EKhHIAuvY9SwfT1CGjM0lbcrnX4WwWc2JnSA-26TvuvZNtaCfc4yQVlgmXauJiUBrBxXJ1wIzOVQLkuyEZ7mr3XS0OF0ix1atPod1gqGsSfGFdNoomIg0w==",
+            "snippet": "Lemon water may provide health benefits like better digestion, decreased risk of kidney stones, and improved blood sugar management with meals. The downsides of drinking lemon water daily include the risk of stomach upset and damage to teeth enamel.",
+            "source_file": null,
+            "status": "live"
+        },
+        {
+            "id": 4,
+            "title": "What Are the Benefits of Drinking Lemon Water? - Cleveland Clinic",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHMA8vEYjR97RecOUc6-HrouPnKnrNOGJa61wPgjL8f3fOYheQSwM6hnz4RVh_6oEfZQ30bMew0hWS16qa96apfHvNgHhCaPWx1hpVD_KfrzI_YvUYGQy3wSVcdU8yglnqeNt9vZ3sDLVjZTf1KI_iRucDYFsg=",
+            "snippet": "Yes, lemon water definitely has its benefits. It's a good way to work vitamin C and antioxidants into your everyday diet. And lemon juice is a natural flavor for your drinks, instead of depending on\u00a0...",
+            "source_file": null,
+            "status": "live"
+        },
+        {
+            "id": 1,
+            "title": "Lemon water 101: What are the benefits of drinking it? - MedicalNewsToday",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEARBhUksxYT2g71zFvmxJoDxohj8wbIplzldynT1QuiRI3IyJgGu-MP01SqVIUSLKBqp8H8vuIST7Tud2h_c76d4LhXaK5imipwf0WT_iKtWCWxgLEbUTmfC5ZTsNPLzsXuX0ymywf6nNyng==",
+            "snippet": "Lemon water is a refreshing drink that can provide vitamin C and help someone maintain hydration. However, lemon water is unlikely to add any significant nutritional benefits. Lemon water is a popular home remedy, with some online sources claiming it can improve digestion, detox the body, or promote weight loss. This article uses scientific evidence to explore the benefits and myths about lemon water.",
+            "source_file": null,
+            "status": "live"
+        }
+    ],
+    "scanned_sources": [
+        {
+            "id": 1,
+            "title": "medicalnewstoday.com",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEARBhUksxYT2g71zFvmxJoDxohj8wbIplzldynT1QuiRI3IyJgGu-MP01SqVIUSLKBqp8H8vuIST7Tud2h_c76d4LhXaK5imipwf0WT_iKtWCWxgLEbUTmfC5ZTsNPLzsXuX0ymywf6nNyng==",
+            "is_cited": true
+        },
+        {
+            "id": 2,
+            "title": "nm.org",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFf2UVVhJrgykXis7L5RaYEFzH45YrZwnOcKCe8AGKaPvyzgAsD0P2w0mx9fr8nmV_13gDPzIaG2_q_KD79VowJbu7tmUANdkbl52g1LzVI0A7RqXDy4hvMROY9I_RZLvZRh3B-Sc3k0YvdRgvrlsqwC6RvLd-WHhV14HJFea-uC-fya6IEYfo3SXoVAkakM7hZmb69",
+            "is_cited": false
+        },
+        {
+            "id": 3,
+            "title": "goodrx.com",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGyZd2D3K6kxwynpKq-GSDqL-vKrM0E5QjJ7tkRdGq9ZWusVy9lXpqAs-i4h6cJsnPHQqz0EKhHIAuvY9SwfT1CGjM0lbcrnX4WwWc2JnSA-26TvuvZNtaCfc4yQVlgmXauJiUBrBxXJ1wIzOVQLkuyEZ7mr3XS0OF0ix1atPod1gqGsSfGFdNoomIg0w==",
+            "is_cited": true
+        },
+        {
+            "id": 4,
+            "title": "clevelandclinic.org",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHMA8vEYjR97RecOUc6-HrouPnKnrNOGJa61wPgjL8f3fOYheQSwM6hnz4RVh_6oEfZQ30bMew0hWS16qa96apfHvNgHhCaPWx1hpVD_KfrzI_YvUYGQy3wSVcdU8yglnqeNt9vZ3sDLVjZTf1KI_iRucDYFsg=",
+            "is_cited": true
+        },
+        {
+            "id": 5,
+            "title": "nyhealth.com",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHHoyFfJDv_AF9oY1kuBVzHj4PbZlJT7YzEisblML6Qacwu4PXYCOz0EOKbUEuN9_kCg_J7Y9HEvQ3PVNiO1jySCxlSyqQ2dpiSrrYPgUeWtibuNPTuOr6MmcjOp9PQZ6YF_nLl54T2tm8U",
+            "is_cited": false
+        },
+        {
+            "id": 6,
+            "title": "healthline.com",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHF68BTIYfSA_lg154ViCfNLvYQPqBWk8o6QMKYTTfXoRhK2TQCPUEhwbUCjA6-wb_DWOK40yULRiOHiLFUujvyhiWxgydUmbtRv8LtQXkn9dSZd1XQUlPyX7xPz4jyURZXIFKHXAw_ycSOlc2KnOCoAxBTijWUKqgldq8=",
+            "is_cited": false
+        },
+        {
+            "id": 7,
+            "title": "healthmatch.io",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFQKiC9C_u75ssELsVtSJyTjdC7zrTr7-9n_B-Rykp2FHQ4ma-I-mbdztS_6eSsZZcvASdeVynzFPCJh-FbfzsLJBTcUvkAC7XZsxnF6g5eQDO7zmlV_1Y6G8QtKPu2ITwrgVB0JYrvgTATLtNIL1ex3uUx42wsOI-LsIM48u2x",
+            "is_cited": false
+        },
+        {
+            "id": 8,
+            "title": "cymbiotika.com",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHeUNqFntXiKIF2UfloIvtV2sQWQeXIhurLYe4x_NpVXy1_q-2awlDU09iE3kIISNy4V2a0cVKfzMrbnD1BCcvMkZmp62GjugtLI9OdG0rjXMjHaSt6GZBmySU-sEhuSN0vdRtcUNLQt1vYocERSmNEpFJ_zjjIt94n8LXI8fUxvBozq6W2MHGffP9nSQRtkSTILvy1xsZ_hRHtLaF_yM-z5AnVC5r2p2u3ppbPhE9LBspMMjJ3VA==",
+            "is_cited": false
+        },
+        {
+            "id": 9,
+            "title": "kolorshealthcare.com",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHymXNtsTvqC3JjDFJ3VwdQVdrfUwKpiFBJjZ7BTXnDFyZnEUAM5yXFQpZZliqCpjUH3ra2WU4SMn-Lc0GeI0Wfv55oyRidBe8cyWAzALfx0X_hWa5tj9TQOuNmIkmAadaPX_OZYdqfZrwAc8Nd_24LkOh5bgvSs_5RimpSw5z3PyAMQkXy8uwkknE=",
+            "is_cited": false
+        },
+        {
+            "id": 10,
+            "title": "sahyadrihospital.com",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEVrlVDN3aSDvAeutvvt48hSSbnunDhgJSObibmA-QMYu4m5qmbuJH6i4NL9m7Hcrp415AZbaL-E1qaaZ-M-m3ogmgkEFmkktHsig_lU9VsuweqMyN5tTFQUlFTwm6dzlUaDTnmfRgvbfe2Ijg8cW6eEv0UdcQGeQOELCE=",
+            "is_cited": false
+        },
+        {
+            "id": 11,
+            "title": "prevention.com",
+            "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHGD2FEjGbpBWQgy1lfb9UGi3Di4xHAVNPFLUUz6eTdk7iXo1WoY3VgtCAULaXmKN8EIZjIkSbhV-qfOHfwSXr7h_tzysH7_if1AgUy9IOPOqalNqVQ-c6EjlCO54CBdXIBzjiN2oObDXMXUDTfTl2q8up4TYEx01nU4Z4RlR1xiLIPYTC0C7mtOzK82CqwD-H6-hieEWI-T9I93rrzZBx-Sbn4dnDUrnGRQbP_IvwJCA==",
+            "is_cited": false
+        }
+    ],
+    "grounding_supports": [
+        {
+            "segment": {
+                "startIndex": 187,
+                "endIndex": 250,
+                "text": "Drinking lemon water can provide vitamin C and aid in hydration"
+            },
+            "groundingChunkIndices": [
+                0,
+                1
+            ],
+            "confidenceScores": [
+                0.707573,
+                0.779311
+            ]
+        },
+        {
+            "segment": {
+                "startIndex": 256,
+                "endIndex": 337,
+                "text": "It may help with digestion due to the citric acid, which can help break down food"
+            },
+            "groundingChunkIndices": [
+                2,
+                3
+            ],
+            "confidenceScores": [
+                0.0066437116,
+                0.18166023
+            ]
+        },
+        {
+            "segment": {
+                "startIndex": 343,
+                "endIndex": 387,
+                "text": "Lemon water might help prevent kidney stones"
+            },
+            "groundingChunkIndices": [
+                3,
+                2,
+                4,
+                0
+            ],
+            "confidenceScores": [
+                0.9260107,
+                0.6941416,
+                0.74941266,
+                0.0038874336
+            ]
+        },
+        {
+            "segment": {
+                "startIndex": 393,
+                "endIndex": 491,
+                "text": "It can act as a low-calorie alternative to sugary drinks, potentially supporting weight management"
+            },
+            "groundingChunkIndices": [
+                5,
+                6,
+                7
+            ],
+            "confidenceScores": [
+                0.78495115,
+                0.40172356,
+                0.9404957
+            ]
+        },
+        {
+            "segment": {
+                "startIndex": 497,
+                "endIndex": 594,
+                "text": "Some studies suggest that drinking water, including lemon water, can slightly increase metabolism"
+            },
+            "groundingChunkIndices": [
+                5,
+                6,
+                8,
+                7
+            ],
+            "confidenceScores": [
+                0.68474215,
+                0.5330267,
+                0.71954757,
+                0.9123383
+            ]
+        },
+        {
+            "segment": {
+                "startIndex": 600,
+                "endIndex": 656,
+                "text": "Lemon water is not a cure for chronic digestive diseases"
+            },
+            "groundingChunkIndices": [
+                2,
+                9
+            ],
+            "confidenceScores": [
+                0.024749048,
+                0.035820734
+            ]
+        },
+        {
+            "segment": {
+                "startIndex": 662,
+                "endIndex": 772,
+                "text": "The high acidity of lemons may cause or worsen certain health issues like heartburn and can erode tooth enamel"
+            },
+            "groundingChunkIndices": [
+                10,
+                2
+            ],
+            "confidenceScores": [
+                0.9116058,
+                0.029009977
+            ]
+        }
+    ],
+    "media_literacy": null,
+    "reliability_metrics": {
+        "reliability_score": 0.5726380158285714,
+        "ai_confidence": 0.85,
+        "base_grounding": 0.5226380158285714,
+        "consistency_bonus": 0.05,
+        "multimodal_bonus": 0.0,
+        "verdict_label": "Medium (Mixed/Uncertain)",
+        "explanation": "Base grounding evaluated at 0.52 across 7 segments. Consistency bonus (+0.05) applied for 11 unique domains. ",
+        "segments": [
+            {
+                "text": "Drinking lemon water can provide vitamin C and aid in hydration",
+                "top_source_domain": "nm.org",
+                "top_source_score": 0.7013799,
+                "sources": [
+                    {
+                        "id": 2,
+                        "source_index": -1,
+                        "chunk_index": 1,
+                        "domain": "nm.org",
+                        "score": 0.7013799,
+                        "quote_text": "nm.org",
+                        "confidence": 0.779311,
+                        "authority": 0.9,
+                        "is_verified": false
+                    },
+                    {
+                        "id": 1,
+                        "source_index": 2,
+                        "chunk_index": 0,
+                        "domain": "medicalnewstoday.com",
+                        "score": 0.4953011,
+                        "quote_text": "Lemon water is a refreshing drink that can provide vitamin C and help someone maintain hydration. However, lemon water is unlikely to add any significant nutritional benefits. Lemon water is a popular home remedy, with some online sources claiming it can improve digestion, detox the body, or promote weight loss. This article uses scientific evidence to explore the benefits and myths about lemon water.",
+                        "confidence": 0.707573,
+                        "authority": 0.7,
+                        "is_verified": false
+                    }
+                ]
+            },
+            {
+                "text": "It may help with digestion due to the citric acid, which can help break down food",
+                "top_source_domain": "clevelandclinic.org",
+                "top_source_score": 0.163494207,
+                "sources": [
+                    {
+                        "id": 4,
+                        "source_index": 1,
+                        "chunk_index": 3,
+                        "domain": "clevelandclinic.org",
+                        "score": 0.163494207,
+                        "quote_text": "Yes, lemon water definitely has its benefits. It's a good way to work vitamin C and antioxidants into your everyday diet. And lemon juice is a natural flavor for your drinks, instead of depending on\u00a0...",
+                        "confidence": 0.18166023,
+                        "authority": 0.9,
+                        "is_verified": false
+                    },
+                    {
+                        "id": 3,
+                        "source_index": 0,
+                        "chunk_index": 2,
+                        "domain": "goodrx.com",
+                        "score": 0.0026574846400000004,
+                        "quote_text": "Lemon water may provide health benefits like better digestion, decreased risk of kidney stones, and improved blood sugar management with meals. The downsides of drinking lemon water daily include the risk of stomach upset and damage to teeth enamel.",
+                        "confidence": 0.0066437116,
+                        "authority": 0.4,
+                        "is_verified": false
+                    }
+                ]
+            },
+            {
+                "text": "Lemon water might help prevent kidney stones",
+                "top_source_domain": "clevelandclinic.org",
+                "top_source_score": 0.83340963,
+                "sources": [
+                    {
+                        "id": 4,
+                        "source_index": 1,
+                        "chunk_index": 3,
+                        "domain": "clevelandclinic.org",
+                        "score": 0.83340963,
+                        "quote_text": "Yes, lemon water definitely has its benefits. It's a good way to work vitamin C and antioxidants into your everyday diet. And lemon juice is a natural flavor for your drinks, instead of depending on\u00a0...",
+                        "confidence": 0.9260107,
+                        "authority": 0.9,
+                        "is_verified": false
+                    },
+                    {
+                        "id": 5,
+                        "source_index": -1,
+                        "chunk_index": 4,
+                        "domain": "nyhealth.com",
+                        "score": 0.524588862,
+                        "quote_text": "nyhealth.com",
+                        "confidence": 0.74941266,
+                        "authority": 0.7,
+                        "is_verified": false
+                    },
+                    {
+                        "id": 3,
+                        "source_index": 0,
+                        "chunk_index": 2,
+                        "domain": "goodrx.com",
+                        "score": 0.27765664,
+                        "quote_text": "Lemon water may provide health benefits like better digestion, decreased risk of kidney stones, and improved blood sugar management with meals. The downsides of drinking lemon water daily include the risk of stomach upset and damage to teeth enamel.",
+                        "confidence": 0.6941416,
+                        "authority": 0.4,
+                        "is_verified": false
+                    },
+                    {
+                        "id": 1,
+                        "source_index": 2,
+                        "chunk_index": 0,
+                        "domain": "medicalnewstoday.com",
+                        "score": 0.00272120352,
+                        "quote_text": "Lemon water is a refreshing drink that can provide vitamin C and help someone maintain hydration. However, lemon water is unlikely to add any significant nutritional benefits. Lemon water is a popular home remedy, with some online sources claiming it can improve digestion, detox the body, or promote weight loss. This article uses scientific evidence to explore the benefits and myths about lemon water.",
+                        "confidence": 0.0038874336,
+                        "authority": 0.7,
+                        "is_verified": false
+                    }
+                ]
+            },
+            {
+                "text": "It can act as a low-calorie alternative to sugary drinks, potentially supporting weight management",
+                "top_source_domain": "cymbiotika.com",
+                "top_source_score": 0.65834699,
+                "sources": [
+                    {
+                        "id": 8,
+                        "source_index": -1,
+                        "chunk_index": 7,
+                        "domain": "cymbiotika.com",
+                        "score": 0.65834699,
+                        "quote_text": "cymbiotika.com",
+                        "confidence": 0.9404957,
+                        "authority": 0.7,
+                        "is_verified": false
+                    },
+                    {
+                        "id": 6,
+                        "source_index": -1,
+                        "chunk_index": 5,
+                        "domain": "healthline.com",
+                        "score": 0.549465805,
+                        "quote_text": "healthline.com",
+                        "confidence": 0.78495115,
+                        "authority": 0.7,
+                        "is_verified": false
+                    },
+                    {
+                        "id": 7,
+                        "source_index": -1,
+                        "chunk_index": 6,
+                        "domain": "healthmatch.io",
+                        "score": 0.281206492,
+                        "quote_text": "healthmatch.io",
+                        "confidence": 0.40172356,
+                        "authority": 0.7,
+                        "is_verified": false
+                    }
+                ]
+            },
+            {
+                "text": "Some studies suggest that drinking water, including lemon water, can slightly increase metabolism",
+                "top_source_domain": "cymbiotika.com",
+                "top_source_score": 0.6386368099999999,
+                "sources": [
+                    {
+                        "id": 8,
+                        "source_index": -1,
+                        "chunk_index": 7,
+                        "domain": "cymbiotika.com",
+                        "score": 0.6386368099999999,
+                        "quote_text": "cymbiotika.com",
+                        "confidence": 0.9123383,
+                        "authority": 0.7,
+                        "is_verified": false
+                    },
+                    {
+                        "id": 9,
+                        "source_index": -1,
+                        "chunk_index": 8,
+                        "domain": "kolorshealthcare.com",
+                        "score": 0.503683299,
+                        "quote_text": "kolorshealthcare.com",
+                        "confidence": 0.71954757,
+                        "authority": 0.7,
+                        "is_verified": false
+                    },
+                    {
+                        "id": 6,
+                        "source_index": -1,
+                        "chunk_index": 5,
+                        "domain": "healthline.com",
+                        "score": 0.479319505,
+                        "quote_text": "healthline.com",
+                        "confidence": 0.68474215,
+                        "authority": 0.7,
+                        "is_verified": false
+                    },
+                    {
+                        "id": 7,
+                        "source_index": -1,
+                        "chunk_index": 6,
+                        "domain": "healthmatch.io",
+                        "score": 0.37311869,
+                        "quote_text": "healthmatch.io",
+                        "confidence": 0.5330267,
+                        "authority": 0.7,
+                        "is_verified": false
+                    }
+                ]
+            },
+            {
+                "text": "Lemon water is not a cure for chronic digestive diseases",
+                "top_source_domain": "sahyadrihospital.com",
+                "top_source_score": 0.0250745138,
+                "sources": [
+                    {
+                        "id": 10,
+                        "source_index": -1,
+                        "chunk_index": 9,
+                        "domain": "sahyadrihospital.com",
+                        "score": 0.0250745138,
+                        "quote_text": "sahyadrihospital.com",
+                        "confidence": 0.035820734,
+                        "authority": 0.7,
+                        "is_verified": false
+                    },
+                    {
+                        "id": 3,
+                        "source_index": 0,
+                        "chunk_index": 2,
+                        "domain": "goodrx.com",
+                        "score": 0.009899619200000001,
+                        "quote_text": "Lemon water may provide health benefits like better digestion, decreased risk of kidney stones, and improved blood sugar management with meals. The downsides of drinking lemon water daily include the risk of stomach upset and damage to teeth enamel.",
+                        "confidence": 0.024749048,
+                        "authority": 0.4,
+                        "is_verified": false
+                    }
+                ]
+            },
+            {
+                "text": "The high acidity of lemons may cause or worsen certain health issues like heartburn and can erode tooth enamel",
+                "top_source_domain": "prevention.com",
+                "top_source_score": 0.63812406,
+                "sources": [
+                    {
+                        "id": 11,
+                        "source_index": -1,
+                        "chunk_index": 10,
+                        "domain": "prevention.com",
+                        "score": 0.63812406,
+                        "quote_text": "prevention.com",
+                        "confidence": 0.9116058,
+                        "authority": 0.7,
+                        "is_verified": false
+                    },
+                    {
+                        "id": 3,
+                        "source_index": 0,
+                        "chunk_index": 2,
+                        "domain": "goodrx.com",
+                        "score": 0.0116039908,
+                        "quote_text": "Lemon water may provide health benefits like better digestion, decreased risk of kidney stones, and improved blood sugar management with meals. The downsides of drinking lemon water daily include the risk of stomach upset and damage to teeth enamel.",
+                        "confidence": 0.029009977,
+                        "authority": 0.4,
+                        "is_verified": false
+                    }
+                ]
+            }
+        ],
+        "unused_sources": []
+    },
+    "sources": []
+}

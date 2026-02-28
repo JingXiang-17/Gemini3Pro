@@ -25,3 +25,8 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Large data files (exceed GitHub 100MB limit)
+data/factcheckinsights_data.json
+community.db
+*.db

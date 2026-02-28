@@ -25,6 +25,10 @@
             {
                 "source": "/analyze",
                 "function": "analyze"
+            },
+            {
+                "source": "/community/**",
+                "function": "analyze"
             }
         ]
     }
